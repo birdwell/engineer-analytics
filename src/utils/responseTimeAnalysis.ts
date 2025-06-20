@@ -86,28 +86,54 @@ async function analyzeResponseTimeForMR(
   authorUsername: string
 ): Promise<CommentThread[]> {
   try {
-    // Fetch all notes for the MR
-    const response = await fetch(
-      `${API_BASE}/projects/${encodeURIComponent(projectId)}/merge_requests/${mrIid}/notes?per_page=100&sort=asc`,
-      {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        signal: AbortSignal.timeout(10000)
-      }
-    );
+    // Fetch top-level notes and threaded discussion notes in parallel so we
+    // capture both kinds of reviewer feedback (inline code comments live in
+    // the /discussions endpoint).
+    const [notesResp, discussionsResp] = await Promise.all([
+      fetch(
+        `${API_BASE}/projects/${projectId}/merge_requests/${mrIid}/notes?per_page=100&sort=asc`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          signal: AbortSignal.timeout(10000)
+        }
+      ),
+      fetch(
+        `${API_BASE}/projects/${projectId}/merge_requests/${mrIid}/discussions?per_page=100&sort=asc`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          signal: AbortSignal.timeout(10000)
+        }
+      )
+    ]);
 
-    if (!response.ok) {
-      console.warn(`Failed to fetch notes for MR ${mrIid}: ${response.status}`);
+    if (!notesResp.ok && !discussionsResp.ok) {
+      console.warn(`Failed to fetch notes or discussions for MR ${mrIid}`);
       return [];
     }
 
-    const notes = await response.json();
-    console.log(`  MR ${mrIid}: Found ${notes.length} notes`);
+    const notes: any[] = notesResp.ok ? await notesResp.json() : [];
+
+    let discussionNotes: any[] = [];
+    if (discussionsResp.ok) {
+      const discussions = await discussionsResp.json();
+      // Each discussion has an array of notes
+      discussionNotes = discussions.flatMap((d: any) => d.notes);
+    }
+
+    const allNotes = [...notes, ...discussionNotes].sort((a, b) =>
+      new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    );
+
+    console.log(`  MR ${mrIid}: total notes collected ${allNotes.length} (top-level: ${notes.length}, discussion: ${discussionNotes.length})`);
     
     // Filter to human comments only (exclude system notes)
-    const humanNotes = notes.filter((note: any) => 
+    const humanNotes = allNotes.filter((note: any) => 
       !note.system && 
       note.body.trim().length > 0 &&
       !isAutomatedComment(note.body)
@@ -205,20 +231,23 @@ function isLikelyResponse(body: string): boolean {
   const responseIndicators = [
     'thanks', 'thank you', 'fixed', 'done', 'updated', 'changed', 'addressed',
     'good point', 'you\'re right', 'agreed', 'makes sense', 'will do',
-    'implemented', 'refactored', 'added', 'removed', 'modified'
+    'implemented', 'refactored', 'added', 'removed', 'modified', 'ok', 'lgtm', 'ack', 'sgtm', 'yes', '👍', '💯'
   ];
   
   const lowerBody = body.toLowerCase();
   return responseIndicators.some(indicator => lowerBody.includes(indicator)) ||
-         body.length > 10; // Assume longer comments are more likely to be responses
+         body.length > 3; // Assume comments longer than 3 chars indicate response
 }
 
 function isAutomatedComment(body: string): boolean {
+  // These patterns target system-generated notes and CI notifications. Keep them
+  // relatively specific to avoid excluding legitimate human feedback such as
+  // "I added tests …" or "Please remove …" in review comments.
   const automatedKeywords = [
-    'automatically', 'pipeline', 'build', 'ci/cd', 'merge request',
-    'approved this merge request', 'mentioned in', 'changed the description',
-    'added', 'removed', 'assigned', 'unassigned', 'requested review',
-    'marked as draft', 'marked as ready', 'merged', 'closed'
+    'pipeline', 'ci/cd', 'approved this merge request', 'mentioned in',
+    'changed the description', 'added label', 'removed label',
+    'assigned to', 'unassigned', 'requested review', 'marked as draft',
+    'marked as ready', 'merged', 'closed this merge request'
   ];
   
   const lowerBody = body.toLowerCase();

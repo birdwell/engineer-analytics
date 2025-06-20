@@ -407,7 +407,7 @@ export async function fetchMRComments(
     const batchPromises = batch.map(async (mrIid) => {
       try {
         const response = await fetch(
-          `${API_BASE}/projects/${encodeURIComponent(projectId)}/merge_requests/${mrIid}/notes?per_page=100&sort=asc`,
+          `${API_BASE}/projects/${projectId}/merge_requests/${mrIid}/notes?per_page=100&sort=asc`,
           {
             headers: {
               'Authorization': `Bearer ${token}`,
@@ -456,7 +456,10 @@ export async function fetchMRComments(
           
           // Log sample comments for debugging
           if (reviewComments.length > 0) {
-            console.log(`  MR ${mrIid}: Sample comments:`, reviewComments.slice(0, 2).map(c => c.substring(0, 50) + '...'));
+            console.log(
+              `  MR ${mrIid}: Sample comments:`,
+              reviewComments.slice(0, 2).map((c: string) => c.substring(0, 50) + '...')
+            );
           }
           
           return reviewComments;
@@ -495,7 +498,7 @@ export async function fetchMRComments(
     });
   } else if (comments.length > 0) {
     console.log('Sample of collected comments:');
-    comments.slice(0, 5).forEach((comment, index) => {
+    comments.slice(0, 5).forEach((comment: string, index: number) => {
       console.log(`${index + 1}: "${comment.substring(0, 100)}${comment.length > 100 ? '...' : ''}"`);
     });
   }
