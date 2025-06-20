@@ -1,5 +1,6 @@
 import React from 'react';
 import { GitMerge, Plus, Minus, Clock, BarChart3, MessageCircle, Users } from 'lucide-react';
+import InfoTooltip from '../InfoTooltip';
 import { MergeRequest } from '../../types/gitlab';
 
 interface MRMetricsProps {
@@ -63,7 +64,10 @@ export default function MRMetrics({
           <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
             <div className="flex items-center space-x-3">
               <Clock className="w-5 h-5 text-gray-600" />
-              <span className="font-medium text-gray-700">Avg Time to Merge</span>
+              <span className="font-medium text-gray-700 flex items-center space-x-1">
+                <span>Avg Time to Merge</span>
+                <InfoTooltip text="Average time from when a merge request is opened until it is merged. Only includes successfully merged MRs." />
+              </span>
             </div>
             <span className="font-semibold text-gray-900">
               {avgTimeToMerge > 0 ? formatDuration(avgTimeToMerge) : 'N/A'}
@@ -73,7 +77,10 @@ export default function MRMetrics({
           <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
             <div className="flex items-center space-x-3">
               <BarChart3 className="w-5 h-5 text-gray-600" />
-              <span className="font-medium text-gray-700">Merge Success Rate</span>
+              <span className="font-medium text-gray-700 flex items-center space-x-1">
+                <span>Merge Success Rate</span>
+                <InfoTooltip text="Percentage of your authored merge requests that were merged versus those that were closed without merging." />
+              </span>
             </div>
             <span className="font-semibold text-gray-900">{mergeRate.toFixed(1)}%</span>
           </div>
@@ -81,7 +88,10 @@ export default function MRMetrics({
           <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
             <div className="flex items-center space-x-3">
               <MessageCircle className="w-5 h-5 text-purple-600" />
-              <span className="font-medium text-gray-700">Avg Comments per MR</span>
+              <span className="font-medium text-gray-700 flex items-center space-x-1">
+                <span>Avg Comments per MR</span>
+                <InfoTooltip text="Average number of comments exchanged on each of your authored merge requests." />
+              </span>
             </div>
             <span className="font-semibold text-gray-900">{avgCommentsPerAuthoredMR.toFixed(1)}</span>
           </div>
@@ -89,7 +99,10 @@ export default function MRMetrics({
           <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
             <div className="flex items-center space-x-3">
               <Users className="w-5 h-5 text-indigo-600" />
-              <span className="font-medium text-gray-700">Avg Review Cycles</span>
+              <span className="font-medium text-gray-700 flex items-center space-x-1">
+                <span>Avg Review Cycles</span>
+                <InfoTooltip text="Average number of review iterations (code push followed by review) your merge requests undergo before being merged." />
+              </span>
             </div>
             <span className="font-semibold text-gray-900">{avgReviewCyclesAsAuthor.toFixed(1)}</span>
           </div>
@@ -97,7 +110,10 @@ export default function MRMetrics({
           <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
             <div className="flex items-center space-x-3">
               <Plus className="w-5 h-5 text-green-600" />
-              <span className="font-medium text-gray-700">Avg Lines Added</span>
+              <span className="font-medium text-gray-700 flex items-center space-x-1">
+                <span>Avg Lines Added</span>
+                <InfoTooltip text="Average number of lines of code added across your authored merge requests." />
+              </span>
             </div>
             <span className="font-semibold text-gray-900">{avgLinesAdded}</span>
           </div>
@@ -105,7 +121,10 @@ export default function MRMetrics({
           <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
             <div className="flex items-center space-x-3">
               <Minus className="w-5 h-5 text-red-600" />
-              <span className="font-medium text-gray-700">Avg Lines Deleted</span>
+              <span className="font-medium text-gray-700 flex items-center space-x-1">
+                <span>Avg Lines Deleted</span>
+                <InfoTooltip text="Average number of lines of code removed across your authored merge requests." />
+              </span>
             </div>
             <span className="font-semibold text-gray-900">{avgLinesDeleted}</span>
           </div>

@@ -334,10 +334,10 @@ function calculateHoursDifference(start: string, end: string): number {
 
 function isAutomatedComment(body: string): boolean {
   const automatedKeywords = [
-    'automatically', 'pipeline', 'build', 'ci/cd', 'merge request',
-    'approved this merge request', 'mentioned in', 'changed the description',
-    'added', 'removed', 'assigned', 'unassigned', 'requested review',
-    'marked as draft', 'marked as ready', 'merged', 'closed'
+    'pipeline', 'ci/cd', 'approved this merge request', 'mentioned in',
+    'changed the description', 'added label', 'removed label',
+    'assigned to', 'unassigned', 'requested review', 'marked as draft',
+    'marked as ready', 'merged', 'closed this merge request'
   ];
   
   const lowerBody = body.toLowerCase();
