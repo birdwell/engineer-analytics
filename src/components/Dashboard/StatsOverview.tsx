@@ -1,13 +1,14 @@
 import React from 'react';
-import { GitBranch, Eye, FileText } from 'lucide-react';
+import { GitBranch, Eye, FileText, Users } from 'lucide-react';
 
 interface StatsOverviewProps {
   totalOpenMRs: number;
   totalDraftMRs: number;
   totalReviews: number;
+  isGroup?: boolean;
 }
 
-export default function StatsOverview({ totalOpenMRs, totalDraftMRs, totalReviews }: StatsOverviewProps) {
+export default function StatsOverview({ totalOpenMRs, totalDraftMRs, totalReviews, isGroup }: StatsOverviewProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
       <div className="bg-white rounded-xl shadow-lg p-6">
@@ -19,7 +20,11 @@ export default function StatsOverview({ totalOpenMRs, totalDraftMRs, totalReview
           </div>
           <div className="ml-4">
             <div className="text-3xl font-bold text-gray-900">{totalOpenMRs}</div>
-            <div className="text-sm font-medium text-gray-600">Open Merge Requests</div>
+            <div className="text-sm font-medium text-gray-600">
+              Open Merge Requests{isGroup && (
+                <span className="block text-xs text-indigo-600">Across all group projects</span>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -33,7 +38,11 @@ export default function StatsOverview({ totalOpenMRs, totalDraftMRs, totalReview
           </div>
           <div className="ml-4">
             <div className="text-3xl font-bold text-gray-900">{totalDraftMRs}</div>
-            <div className="text-sm font-medium text-gray-600">Draft Merge Requests</div>
+            <div className="text-sm font-medium text-gray-600">
+              Draft Merge Requests{isGroup && (
+                <span className="block text-xs text-indigo-600">Across all group projects</span>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -47,7 +56,11 @@ export default function StatsOverview({ totalOpenMRs, totalDraftMRs, totalReview
           </div>
           <div className="ml-4">
             <div className="text-3xl font-bold text-gray-900">{totalReviews}</div>
-            <div className="text-sm font-medium text-gray-600">Pending Reviews</div>
+            <div className="text-sm font-medium text-gray-600">
+              Pending Reviews{isGroup && (
+                <span className="block text-xs text-indigo-600">Across all group projects</span>
+              )}
+            </div>
           </div>
         </div>
       </div>

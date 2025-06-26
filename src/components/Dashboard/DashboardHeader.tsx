@@ -1,5 +1,5 @@
 import React from 'react';
-import { RefreshCw, LogOut, Loader2, Database, BarChart3 } from 'lucide-react';
+import { RefreshCw, LogOut, Loader2, Database, BarChart3, Users, Folder } from 'lucide-react';
 
 interface DashboardHeaderProps {
   onRefresh: () => void;
@@ -9,6 +9,8 @@ interface DashboardHeaderProps {
   enhancementLoading: boolean;
   hasComplexityData: boolean;
   cacheStats: { cached: number; total: number };
+  projectPath?: string;
+  isGroup?: boolean;
 }
 
 export default function DashboardHeader({
@@ -18,15 +20,36 @@ export default function DashboardHeader({
   loading,
   enhancementLoading,
   hasComplexityData,
-  cacheStats
+  cacheStats,
+  projectPath,
+  isGroup
 }: DashboardHeaderProps) {
   return (
     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">GitLab MR Dashboard</h1>
+        <div className="flex items-center space-x-3 mb-2">
+          <h1 className="text-3xl font-bold text-gray-900">GitLab MR Dashboard</h1>
+          {projectPath && (
+            <div className="flex items-center space-x-2 px-3 py-1 bg-indigo-50 rounded-full border border-indigo-200">
+              {isGroup ? (
+                <Users className="w-4 h-4 text-indigo-600" />
+              ) : (
+                <Folder className="w-4 h-4 text-indigo-600" />
+              )}
+              <span className="text-sm font-medium text-indigo-700">
+                {isGroup ? 'Group' : 'Project'}: {projectPath}
+              </span>
+            </div>
+          )}
+        </div>
         <div className="flex items-center space-x-4">
           <p className="text-base text-gray-600">
             Monitor merge request activity and review assignments with complexity analysis
+            {isGroup && (
+              <span className="block text-indigo-600 font-medium mt-1">
+                Analyzing all repositories in the group
+              </span>
+            )}
           </p>
           {enhancementLoading && (
             <div className="flex items-center space-x-2 text-sm text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">

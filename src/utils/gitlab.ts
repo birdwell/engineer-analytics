@@ -58,15 +58,11 @@ export async function fetchProjectPath(token: string, projectId: string): Promis
   }
 }
 
-export async function fetchMergeRequests(
-  token: string,
-  projectId: string
-): Promise<MergeRequest[]> {
-  console.log('Dashboard: Fetching current open MRs...');
-  
+async function isGroupPath(token: string, path: string): Promise<boolean> {
   try {
-    const response = await fetch(
-      `${API_BASE}/projects/${encodeURIComponent(projectId)}/merge_requests?state=opened&per_page=100`,
+    // Try to fetch as a group first
+    const groupResponse = await fetch(
+      `${API_BASE}/groups/${encodeURIComponent(path)}`,
       {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -74,40 +70,192 @@ export async function fetchMergeRequests(
         },
       }
     );
+    
+    return groupResponse.ok;
+  } catch (error) {
+    return false;
+  }
+}
 
-    if (!response.ok) {
-      throw new Error(`GitLab API error: ${response.status} ${response.statusText}`);
+async function fetchGroupProjects(token: string, groupPath: string): Promise<any[]> {
+  try {
+    console.log(`Fetching projects for group: ${groupPath}`);
+    
+    const allProjects: any[] = [];
+    let page = 1;
+    const perPage = 100;
+    
+    while (true) {
+      const response = await fetch(
+        `${API_BASE}/groups/${encodeURIComponent(groupPath)}/projects?per_page=${perPage}&page=${page}&include_subgroups=true&archived=false`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch group projects: ${response.status}`);
+      }
+
+      const projects = await response.json();
+      if (projects.length === 0) break;
+      
+      allProjects.push(...projects);
+      console.log(`Fetched ${projects.length} projects from page ${page}, total: ${allProjects.length}`);
+      
+      if (projects.length < perPage) break;
+      page++;
     }
+    
+    console.log(`Found ${allProjects.length} total projects in group ${groupPath}`);
+    return allProjects;
+  } catch (error) {
+    console.error('Failed to fetch group projects:', error);
+    throw error;
+  }
+}
 
-    const mrs = await response.json();
-    console.log(`Dashboard: Found ${mrs.length} open MRs`);
+export async function fetchMergeRequests(
+  token: string,
+  projectId: string
+): Promise<MergeRequest[]> {
+  console.log('Dashboard: Fetching current open MRs...');
+  
+  try {
+    // Check if this is a group path
+    const isGroup = await isGroupPath(token, projectId);
     
-    // Log breakdown for debugging
-    const openMRs = mrs.filter((mr: any) => !mr.draft);
-    const draftMRs = mrs.filter((mr: any) => mr.draft);
-    console.log(`Dashboard: ${openMRs.length} open (non-draft), ${draftMRs.length} draft MRs`);
-    
-    return mrs;
+    if (isGroup) {
+      console.log(`Detected group path: ${projectId}, fetching MRs from all projects in group`);
+      return await fetchGroupMergeRequests(token, projectId);
+    } else {
+      console.log(`Detected project path: ${projectId}, fetching MRs from single project`);
+      return await fetchSingleProjectMergeRequests(token, projectId);
+    }
   } catch (error) {
     console.error('Dashboard: Failed to fetch MRs:', error);
     throw error;
   }
 }
 
+async function fetchSingleProjectMergeRequests(
+  token: string,
+  projectId: string
+): Promise<MergeRequest[]> {
+  const response = await fetch(
+    `${API_BASE}/projects/${encodeURIComponent(projectId)}/merge_requests?state=opened&per_page=100`,
+    {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(`GitLab API error: ${response.status} ${response.statusText}`);
+  }
+
+  const mrs = await response.json();
+  console.log(`Dashboard: Found ${mrs.length} open MRs in project`);
+  
+  // Log breakdown for debugging
+  const openMRs = mrs.filter((mr: any) => !mr.draft);
+  const draftMRs = mrs.filter((mr: any) => mr.draft);
+  console.log(`Dashboard: ${openMRs.length} open (non-draft), ${draftMRs.length} draft MRs`);
+  
+  return mrs;
+}
+
+async function fetchGroupMergeRequests(
+  token: string,
+  groupPath: string
+): Promise<MergeRequest[]> {
+  const projects = await fetchGroupProjects(token, groupPath);
+  const allMRs: MergeRequest[] = [];
+  
+  console.log(`Fetching MRs from ${projects.length} projects in group...`);
+  
+  // Fetch MRs from each project in parallel (in batches to avoid overwhelming the API)
+  const batchSize = 5;
+  for (let i = 0; i < projects.length; i += batchSize) {
+    const batch = projects.slice(i, i + batchSize);
+    console.log(`Processing project batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(projects.length/batchSize)}`);
+    
+    const batchPromises = batch.map(async (project) => {
+      try {
+        const response = await fetch(
+          `${API_BASE}/projects/${project.id}/merge_requests?state=opened&per_page=100`,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            signal: AbortSignal.timeout(10000) // 10 second timeout per project
+          }
+        );
+
+        if (response.ok) {
+          const mrs = await response.json();
+          console.log(`  ${project.name}: ${mrs.length} MRs`);
+          return mrs;
+        } else {
+          console.warn(`  ${project.name}: Failed to fetch MRs (${response.status})`);
+          return [];
+        }
+      } catch (error) {
+        console.warn(`  ${project.name}: Error fetching MRs:`, error);
+        return [];
+      }
+    });
+
+    const batchResults = await Promise.allSettled(batchPromises);
+    batchResults.forEach((result, index) => {
+      if (result.status === 'fulfilled') {
+        allMRs.push(...result.value);
+      } else {
+        console.warn(`Failed to fetch MRs for project ${batch[index].name}:`, result.reason);
+      }
+    });
+
+    // Small delay between batches
+    if (i + batchSize < projects.length) {
+      await new Promise(resolve => setTimeout(resolve, 200));
+    }
+  }
+  
+  console.log(`Dashboard: Found ${allMRs.length} total open MRs across ${projects.length} projects`);
+  
+  // Log breakdown for debugging
+  const openMRs = allMRs.filter((mr: any) => !mr.draft);
+  const draftMRs = allMRs.filter((mr: any) => mr.draft);
+  console.log(`Dashboard: ${openMRs.length} open (non-draft), ${draftMRs.length} draft MRs`);
+  
+  return allMRs;
+}
+
 export async function fetchMRComplexity(
   token: string,
   projectId: string,
-  mrIid: number
+  mrIid: number,
+  actualProjectId?: number
 ): Promise<MRComplexity> {
-  // Check cache first
-  const cached = getCachedComplexity(projectId, mrIid);
+  // For group analysis, we need to use the actual project ID for the API call
+  const targetProjectId = actualProjectId || projectId;
+  
+  // Check cache first - use a composite key for group scenarios
+  const cacheKey = actualProjectId ? `${actualProjectId}_${mrIid}` : `${projectId}_${mrIid}`;
+  const cached = getCachedComplexity(cacheKey, mrIid);
   if (cached) {
     return cached;
   }
 
   try {
     const response = await fetch(
-      `${API_BASE}/projects/${encodeURIComponent(projectId)}/merge_requests/${mrIid}/changes`,
+      `${API_BASE}/projects/${encodeURIComponent(targetProjectId)}/merge_requests/${mrIid}/changes`,
       {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -128,7 +276,7 @@ export async function fetchMRComplexity(
       };
       
       // Cache the default complexity to avoid repeated API calls
-      setCachedComplexity(projectId, defaultComplexity);
+      setCachedComplexity(cacheKey, defaultComplexity);
       return defaultComplexity;
     }
 
@@ -167,7 +315,7 @@ export async function fetchMRComplexity(
     };
 
     // Cache the complexity data
-    setCachedComplexity(projectId, complexity);
+    setCachedComplexity(cacheKey, complexity);
     
     return complexity;
   } catch (error) {
@@ -183,7 +331,7 @@ export async function fetchMRComplexity(
     };
     
     // Cache the default complexity to avoid repeated failures
-    setCachedComplexity(projectId, defaultComplexity);
+    setCachedComplexity(cacheKey, defaultComplexity);
     return defaultComplexity;
   }
 }
@@ -225,9 +373,13 @@ export async function fetchAllMRComplexities(
   const complexities: MRComplexity[] = [];
   const uncachedMRs: MergeRequest[] = [];
   
+  // Check if this is a group analysis
+  const isGroup = await isGroupPath(token, projectId);
+  
   // First, check which MRs we already have cached
   for (const mr of mergeRequests) {
-    const cached = getCachedComplexity(projectId, mr.iid);
+    const cacheKey = isGroup ? `${mr.project_id || projectId}_${mr.iid}` : `${projectId}_${mr.iid}`;
+    const cached = getCachedComplexity(cacheKey, mr.iid);
     if (cached) {
       complexities.push(cached);
     } else {
@@ -243,7 +395,14 @@ export async function fetchAllMRComplexities(
     const batchSize = 5;
     for (let i = 0; i < uncachedMRs.length; i += batchSize) {
       const batch = uncachedMRs.slice(i, i + batchSize);
-      const batchPromises = batch.map(mr => fetchMRComplexity(token, projectId, mr.iid));
+      const batchPromises = batch.map(mr => 
+        fetchMRComplexity(
+          token, 
+          projectId, 
+          mr.iid, 
+          isGroup ? (mr as any).project_id : undefined
+        )
+      );
       
       try {
         const batchResults = await Promise.allSettled(batchPromises);
@@ -263,7 +422,8 @@ export async function fetchAllMRComplexities(
               complexityScore: 1.0
             };
             complexities.push(defaultComplexity);
-            setCachedComplexity(projectId, defaultComplexity);
+            const cacheKey = isGroup ? `${(batch[index] as any).project_id || projectId}_${batch[index].iid}` : `${projectId}_${batch[index].iid}`;
+            setCachedComplexity(cacheKey, defaultComplexity);
           }
         });
       } catch (error) {
@@ -279,7 +439,8 @@ export async function fetchAllMRComplexities(
             complexityScore: 1.0
           };
           complexities.push(defaultComplexity);
-          setCachedComplexity(projectId, defaultComplexity);
+          const cacheKey = isGroup ? `${(mr as any).project_id || projectId}_${mr.iid}` : `${projectId}_${mr.iid}`;
+          setCachedComplexity(cacheKey, defaultComplexity);
         });
       }
       

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Key, GitBranch, AlertCircle, Shield, Folder } from 'lucide-react';
+import { Key, GitBranch, AlertCircle, Shield, Folder, Users } from 'lucide-react';
 
 interface TokenFormProps {
   onSubmit: (token: string, projectId: string, projectPath?: string) => void;
@@ -11,6 +11,7 @@ interface TokenFormProps {
 export default function TokenForm({ onSubmit, loading, error, hasStoredCredentials }: TokenFormProps) {
   const [token, setToken] = useState('');
   const [projectPath, setProjectPath] = useState('');
+  const [analysisType, setAnalysisType] = useState<'project' | 'group'>('project');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,7 +32,7 @@ export default function TokenForm({ onSubmit, loading, error, hasStoredCredentia
           </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">GitLab MR Dashboard</h1>
           <p className="text-base text-gray-600">
-            Connect to your GitLab project to view merge request insights
+            Connect to your GitLab project or group to view merge request insights
           </p>
         </div>
 
@@ -81,13 +82,57 @@ export default function TokenForm({ onSubmit, loading, error, hasStoredCredentia
             </p>
           </div>
 
+          {/* Analysis Type Selection */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-3">
+              Analysis Type
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setAnalysisType('project')}
+                className={`p-3 rounded-lg border-2 transition-all ${
+                  analysisType === 'project'
+                    ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                    : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                }`}
+              >
+                <div className="flex items-center space-x-2">
+                  <Folder className="w-4 h-4" />
+                  <span className="text-sm font-medium">Single Project</span>
+                </div>
+                <p className="text-xs mt-1 opacity-75">Analyze one repository</p>
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => setAnalysisType('group')}
+                className={`p-3 rounded-lg border-2 transition-all ${
+                  analysisType === 'group'
+                    ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
+                    : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                }`}
+              >
+                <div className="flex items-center space-x-2">
+                  <Users className="w-4 h-4" />
+                  <span className="text-sm font-medium">Group</span>
+                </div>
+                <p className="text-xs mt-1 opacity-75">Analyze all group repos</p>
+              </button>
+            </div>
+          </div>
+
           <div>
             <label htmlFor="projectPath" className="block text-sm font-semibold text-gray-700 mb-2">
-              Project Path
+              {analysisType === 'project' ? 'Project Path' : 'Group Path'}
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Folder className="h-5 w-5 text-gray-400" />
+                {analysisType === 'project' ? (
+                  <Folder className="h-5 w-5 text-gray-400" />
+                ) : (
+                  <Users className="h-5 w-5 text-gray-400" />
+                )}
               </div>
               <input
                 type="text"
@@ -95,12 +140,20 @@ export default function TokenForm({ onSubmit, loading, error, hasStoredCredentia
                 value={projectPath}
                 onChange={(e) => setProjectPath(e.target.value)}
                 className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors text-sm"
-                placeholder="group/project-name"
+                placeholder={
+                  analysisType === 'project' 
+                    ? "group/project-name" 
+                    : "group-name"
+                }
                 required
               />
             </div>
             <p className="mt-2 text-sm text-gray-500">
-              Full project path (e.g., lifechurch/youversion/user-applications/flutter/youversion-flutter)
+              {analysisType === 'project' ? (
+                <>Full project path (e.g., lifechurch/youversion/user-applications/flutter/youversion-flutter)</>
+              ) : (
+                <>Group name or path (e.g., lifechurch/youversion)</>
+              )}
             </p>
           </div>
 
@@ -115,7 +168,7 @@ export default function TokenForm({ onSubmit, loading, error, hasStoredCredentia
                 <span>Connecting...</span>
               </div>
             ) : (
-              'Connect to GitLab'
+              `Connect to GitLab ${analysisType === 'group' ? 'Group' : 'Project'}`
             )}
           </button>
         </form>

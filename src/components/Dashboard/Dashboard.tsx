@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DashboardData, EngineerStats } from '../../types/gitlab';
 import { getNextReviewer } from '../../utils/gitlab';
 import { getCacheStats } from '../../utils/complexityCache';
@@ -34,6 +34,33 @@ export default function Dashboard({
   token 
 }: DashboardProps) {
   const [selectedEngineer, setSelectedEngineer] = useState<EngineerStats | null>(null);
+  const [isGroup, setIsGroup] = useState<boolean>(false);
+
+  // Detect if this is a group analysis
+  useEffect(() => {
+    const detectGroupAnalysis = async () => {
+      if (token && projectId) {
+        try {
+          // Try to fetch as a group first
+          const groupResponse = await fetch(
+            `https://gitlab.com/api/v4/groups/${encodeURIComponent(projectId)}`,
+            {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+              },
+            }
+          );
+          
+          setIsGroup(groupResponse.ok);
+        } catch (error) {
+          setIsGroup(false);
+        }
+      }
+    };
+
+    detectGroupAnalysis();
+  }, [token, projectId]);
 
   const totalOpenMRs = data.mergeRequests.filter(mr => !mr.draft).length;
   const totalDraftMRs = data.mergeRequests.filter(mr => mr.draft).length;
@@ -81,6 +108,8 @@ export default function Dashboard({
           enhancementLoading={enhancementLoading}
           hasComplexityData={hasComplexityData}
           cacheStats={cacheStats}
+          projectPath={projectPath}
+          isGroup={isGroup}
         />
 
         {nextReviewer && (
@@ -94,13 +123,14 @@ export default function Dashboard({
           totalOpenMRs={totalOpenMRs}
           totalDraftMRs={totalDraftMRs}
           totalReviews={totalReviews}
+          isGroup={isGroup}
         />
 
         {/* Review Distribution Chart */}
         <div className="mb-8">
           <PieChart
             data={data.reviewDistribution}
-            title="Review Assignment Distribution"
+            title={`Review Assignment Distribution${isGroup ? ' (All Group Projects)' : ''}`}
           />
         </div>
 
@@ -115,6 +145,7 @@ export default function Dashboard({
             projectPath={projectPath}
             token={token}
             onEngineerClick={handleEngineerClick}
+            isGroup={isGroup}
           />
         </div>
 

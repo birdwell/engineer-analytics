@@ -14,6 +14,7 @@ interface MRTableProps {
   projectPath?: string;
   token?: string;
   onEngineerClick?: (engineer: EngineerStats) => void;
+  isGroup?: boolean;
 }
 
 type SortField = 'name' | 'openMRs' | 'draftMRs' | 'assignedReviews' | 'reviewComplexity' | 'workloadScore' | 'total';
@@ -27,7 +28,8 @@ export default function MRTable({
   projectId = '',
   projectPath = '',
   token = '',
-  onEngineerClick
+  onEngineerClick,
+  isGroup = false
 }: MRTableProps) {
   const [sortField, setSortField] = useState<SortField>('workloadScore');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
@@ -51,7 +53,13 @@ export default function MRTable({
     // Use projectPath if available, otherwise use projectId
     const projectIdentifier = projectPath || projectId;
     
-    return `https://gitlab.com/${projectIdentifier}/-/merge_requests/?sort=updated_desc&state=opened&reviewer_username=${username}&first_page_size=20`;
+    if (isGroup) {
+      // For groups, we need to search across all projects in the group
+      return `https://gitlab.com/groups/${projectIdentifier}/-/merge_requests/?sort=updated_desc&state=opened&reviewer_username=${username}&first_page_size=20`;
+    } else {
+      // For single projects
+      return `https://gitlab.com/${projectIdentifier}/-/merge_requests/?sort=updated_desc&state=opened&reviewer_username=${username}&first_page_size=20`;
+    }
   };
 
   // Helper function to handle review click
@@ -137,8 +145,8 @@ export default function MRTable({
             <h2 className="text-xl font-semibold text-gray-900">Engineer Statistics</h2>
             <p className="text-sm text-gray-600 mt-1">
               {hasComplexityData 
-                ? 'Workload analysis including MR complexity based on file changes and line modifications'
-                : 'Basic workload analysis - complexity data loading in background'
+                ? `Workload analysis including MR complexity based on file changes and line modifications${isGroup ? ' across all group projects' : ''}`
+                : `Basic workload analysis - complexity data loading in background${isGroup ? ' for all group projects' : ''}`
               }
               {onEngineerClick && (
                 <span className="block text-indigo-600 font-medium mt-1">
