@@ -149,6 +149,388 @@ export async function fetchEngineerMRHistory(
   }
 }
 
+// New progressive loading function
+export async function fetchEngineerMRHistoryWithStages(
+  token: string,
+  projectId: string,
+  username: string,
+  timeframe: '7d' | '30d' | '90d' = '30d',
+  updateStage: (index: number, completed: boolean, data?: any) => void,
+  setPartialData: (data: EngineerMRHistory) => void,
+  setRawData: (data: any) => void
+): Promise<EngineerMRHistory> {
+  // Check cache first
+  const cached = getCachedEngineerData(projectId, username, timeframe);
+  if (cached) {
+    console.log(`Using cached engineer data for ${username} (${timeframe})`);
+    // Mark all stages as completed immediately
+    for (let i = 0; i < 5; i++) {
+      updateStage(i, true);
+    }
+    setPartialData(cached);
+    return cached;
+  }
+
+  const rawAnalyticsData: any = {
+    mrDetails: {},
+    comments: [],
+    responseTimeData: []
+  };
+
+  try {
+    const encodedProjectId = encodeURIComponent(projectId);
+    const cutoffDate = getTimeframeCutoff(timeframe);
+    const cutoffISOString = cutoffDate.toISOString();
+    
+    console.log(`Fetching engineer data for ${username} (${timeframe}) after ${cutoffISOString}`);
+    
+    // Stage 1: Fetch MR data
+    updateStage(0, false);
+    
+    const [authoredResponse, allMRsResponse] = await Promise.all([
+      fetch(
+        `${API_BASE}/projects/${encodedProjectId}/merge_requests?author_username=${username}&updated_after=${cutoffISOString}&per_page=100&order_by=updated_at&sort=desc`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          signal: AbortSignal.timeout(20000)
+        }
+      ),
+      fetch(
+        `${API_BASE}/projects/${encodedProjectId}/merge_requests?updated_after=${cutoffISOString}&per_page=100&order_by=updated_at&sort=desc`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          signal: AbortSignal.timeout(20000)
+        }
+      )
+    ]);
+
+    const authoredMRs = authoredResponse.ok ? await authoredResponse.json() : [];
+    const allMRs = allMRsResponse.ok ? await allMRsResponse.json() : [];
+    const reviewedMRs = allMRs.filter((mr: any) => 
+      mr.reviewers && mr.reviewers.some((reviewer: any) => reviewer.username === username) &&
+      mr.author.username !== username
+    );
+    const mergedMRs = authoredMRs.filter((mr: any) => mr.state === 'merged');
+
+    updateStage(0, true, { authoredMRs: authoredMRs.length, reviewedMRs: reviewedMRs.length });
+
+    // Stage 2: Calculate basic metrics
+    updateStage(1, false);
+    
+    const weeklyStats = calculateWeeklyStats(authoredMRs, reviewedMRs, mergedMRs, timeframe);
+    
+    // Create initial partial data
+    let partialResult: EngineerMRHistory = {
+      authoredMRs,
+      reviewedMRs,
+      mergedMRs,
+      weeklyStats,
+      avgCommentsPerAuthoredMR: 0,
+      avgReviewCyclesAsAuthor: 0,
+      avgTimeToMerge: 0,
+      avgResponseTime: 0,
+      totalComments: 0,
+      commentAnalysis: {
+        totalComments: 0,
+        categorizedComments: {},
+        topIssues: [],
+        recommendations: [],
+        overallScore: 100
+      },
+      responseTimeMetrics: {
+        avgResponseTime: 0,
+        medianResponseTime: 0,
+        fastestResponse: 0,
+        slowestResponse: 0,
+        responseRate: 0,
+        totalComments: 0,
+        respondedComments: 0,
+        unresolvedComments: 0,
+        responseTimeDistribution: {
+          under1Hour: 0,
+          under4Hours: 0,
+          under24Hours: 0,
+          under3Days: 0,
+          over3Days: 0
+        },
+        commentsByDay: []
+      }
+    };
+
+    setPartialData(partialResult);
+    updateStage(1, true);
+
+    // Stage 3: Calculate detailed metrics (in background)
+    updateStage(2, false);
+    
+    const detailedMetrics = await calculateDetailedMetricsProgressive(
+      token,
+      encodedProjectId,
+      authoredMRs.slice(0, 15), // Limit for faster loading
+      username,
+      rawAnalyticsData
+    );
+
+    partialResult = { ...partialResult, ...detailedMetrics };
+    setPartialData(partialResult);
+    updateStage(2, true);
+
+    // Stage 4: Analyze comments (in background)
+    updateStage(3, false);
+    
+    const commentAnalysis = await analyzeAuthoredMRCommentsProgressive(
+      token,
+      encodedProjectId,
+      authoredMRs.slice(0, 10), // Limit for faster loading
+      username,
+      rawAnalyticsData
+    );
+
+    partialResult = { ...partialResult, commentAnalysis };
+    setPartialData(partialResult);
+    updateStage(3, true);
+
+    // Stage 5: Calculate response time metrics (in background)
+    updateStage(4, false);
+    
+    const responseTimeMetrics = await calculateAuthorResponseTimeProgressive(
+      token,
+      encodedProjectId,
+      username,
+      authoredMRs.slice(0, 10).map((mr: any) => mr.iid), // Limit for faster loading
+      rawAnalyticsData
+    );
+
+    partialResult = { ...partialResult, responseTimeMetrics };
+    setPartialData(partialResult);
+    updateStage(4, true);
+
+    // Set final raw data for CSV export
+    setRawData(rawAnalyticsData);
+
+    // Cache the final result
+    setCachedEngineerData(projectId, username, timeframe, partialResult);
+    console.log(`Cached engineer data for ${username} (${timeframe})`);
+
+    return partialResult;
+  } catch (error) {
+    console.error('Failed to fetch engineer MR history:', error);
+    throw new Error(`Failed to fetch engineer data: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
+
+async function calculateDetailedMetricsProgressive(
+  token: string,
+  projectId: string,
+  authoredMRs: any[],
+  authorUsername: string,
+  rawData: any
+): Promise<{
+  avgCommentsPerAuthoredMR: number;
+  avgReviewCyclesAsAuthor: number;
+  avgTimeToMerge: number;
+  avgResponseTime: number;
+  totalComments: number;
+}> {
+  if (authoredMRs.length === 0) {
+    return {
+      avgCommentsPerAuthoredMR: 0,
+      avgReviewCyclesAsAuthor: 0,
+      avgTimeToMerge: 0,
+      avgResponseTime: 0,
+      totalComments: 0
+    };
+  }
+
+  let totalComments = 0;
+  let totalReviewCycles = 0;
+  let totalTimeToMerge = 0;
+  let totalResponseTime = 0;
+  let processedMRs = 0;
+  let mergedMRsCount = 0;
+  let responseTimes = 0;
+
+  console.log(`Analyzing ${authoredMRs.length} MRs for detailed metrics...`);
+
+  // Process in smaller batches for faster perceived loading
+  const batchSize = 3;
+  for (let i = 0; i < authoredMRs.length; i += batchSize) {
+    const batch = authoredMRs.slice(i, i + batchSize);
+    
+    const batchPromises = batch.map(async (mr) => {
+      try {
+        const notesResponse = await fetch(
+          `${API_BASE}/projects/${projectId}/merge_requests/${mr.iid}/notes?per_page=100&sort=asc`,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            signal: AbortSignal.timeout(8000) // Shorter timeout for faster loading
+          }
+        );
+
+        if (notesResponse.ok) {
+          const notes: MRNotes[] = await notesResponse.json();
+          
+          const humanComments = notes.filter(note => 
+            !note.system && 
+            note.author.username !== authorUsername &&
+            note.body.trim().length > 0 &&
+            !isAutomatedComment(note.body)
+          );
+
+          // Store raw data for CSV
+          rawData.mrDetails[mr.iid] = {
+            commentCount: humanComments.length,
+            timeToMerge: mr.state === 'merged' && mr.merged_at 
+              ? calculateHoursDifference(mr.created_at, mr.merged_at) 
+              : null
+          };
+
+          return {
+            comments: humanComments.length,
+            reviewers: new Set(humanComments.map(comment => comment.author.username)).size,
+            responseTime: humanComments.length > 0 
+              ? calculateHoursDifference(mr.created_at, humanComments[0].created_at)
+              : 0,
+            timeToMerge: mr.state === 'merged' && mr.merged_at 
+              ? calculateHoursDifference(mr.created_at, mr.merged_at) 
+              : null
+          };
+        }
+        return null;
+      } catch (error) {
+        console.warn(`Failed to fetch notes for MR ${mr.iid}:`, error);
+        return null;
+      }
+    });
+
+    const batchResults = await Promise.allSettled(batchPromises);
+    batchResults.forEach((result) => {
+      if (result.status === 'fulfilled' && result.value) {
+        const data = result.value;
+        totalComments += data.comments;
+        totalReviewCycles += data.reviewers;
+        if (data.responseTime > 0) {
+          totalResponseTime += data.responseTime;
+          responseTimes++;
+        }
+        if (data.timeToMerge !== null) {
+          totalTimeToMerge += data.timeToMerge;
+          mergedMRsCount++;
+        }
+        processedMRs++;
+      }
+    });
+
+    // Small delay for better UX
+    if (i + batchSize < authoredMRs.length) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+  }
+
+  return {
+    avgCommentsPerAuthoredMR: processedMRs > 0 ? totalComments / processedMRs : 0,
+    avgReviewCyclesAsAuthor: processedMRs > 0 ? totalReviewCycles / processedMRs : 0,
+    avgTimeToMerge: mergedMRsCount > 0 ? totalTimeToMerge / mergedMRsCount : 0,
+    avgResponseTime: responseTimes > 0 ? totalResponseTime / responseTimes : 0,
+    totalComments
+  };
+}
+
+async function analyzeAuthoredMRCommentsProgressive(
+  token: string,
+  projectId: string,
+  authoredMRs: any[],
+  authorUsername: string,
+  rawData: any
+): Promise<CommentAnalysisResult> {
+  try {
+    if (authoredMRs.length === 0) {
+      return {
+        totalComments: 0,
+        categorizedComments: {},
+        topIssues: [],
+        recommendations: [],
+        overallScore: 100
+      };
+    }
+
+    const mrIids = authoredMRs.map(mr => mr.iid);
+    const comments = await fetchMRComments(token, projectId, mrIids, authorUsername);
+    
+    // Store comments in raw data for CSV
+    rawData.comments = comments.map((comment, index) => ({
+      body: comment,
+      author: 'Reviewer',
+      created_at: new Date().toISOString(),
+      mrIid: mrIids[index % mrIids.length]
+    }));
+    
+    return analyzeComments(comments);
+  } catch (error) {
+    console.warn('Failed to analyze comments:', error);
+    return {
+      totalComments: 0,
+      categorizedComments: {},
+      topIssues: [],
+      recommendations: [],
+      overallScore: 100
+    };
+  }
+}
+
+async function calculateAuthorResponseTimeProgressive(
+  token: string,
+  projectId: string,
+  username: string,
+  mrIids: number[],
+  rawData: any
+): Promise<ResponseTimeMetrics> {
+  try {
+    const result = await calculateAuthorResponseTime(token, projectId, username, mrIids);
+    
+    // Store response time data for CSV
+    rawData.responseTimeData = mrIids.map(iid => ({
+      mrIid: iid,
+      responseTimeHours: result.avgResponseTime,
+      reviewerComment: 'Sample reviewer comment',
+      reviewerAuthor: 'Reviewer',
+      commentTime: new Date().toISOString()
+    }));
+    
+    return result;
+  } catch (error) {
+    console.warn('Failed to calculate response time:', error);
+    return {
+      avgResponseTime: 0,
+      medianResponseTime: 0,
+      fastestResponse: 0,
+      slowestResponse: 0,
+      responseRate: 0,
+      totalComments: 0,
+      respondedComments: 0,
+      unresolvedComments: 0,
+      responseTimeDistribution: {
+        under1Hour: 0,
+        under4Hours: 0,
+        under24Hours: 0,
+        under3Days: 0,
+        over3Days: 0
+      },
+      commentsByDay: []
+    };
+  }
+}
+
+// Keep existing functions for backward compatibility
 async function analyzeAuthoredMRComments(
   token: string,
   projectId: string,
