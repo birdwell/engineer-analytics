@@ -34,7 +34,7 @@ export default function StatsOverview({
         break;
       case 'open':
         params.set('state', 'opened');
-        params.set('not[draft]', 'yes'); // Exclude drafts
+        params.set('draft', 'no'); // Exclude drafts
         break;
       case 'draft':
         params.set('state', 'opened');
