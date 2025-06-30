@@ -62,10 +62,11 @@ export default function Dashboard({
     detectGroupAnalysis();
   }, [token, projectId]);
 
-  const totalOpenMRs = data.mergeRequests.filter(mr => !mr.draft).length;
-  const totalDraftMRs = data.mergeRequests.filter(mr => mr.draft).length;
-  // Fix: Total reviews should be non-draft open MRs (same as totalOpenMRs)
-  const totalReviews = totalOpenMRs;
+  // Fixed calculations
+  const totalMRs = data.mergeRequests.length; // All MRs (draft + non-draft)
+  const totalOpenMRs = data.mergeRequests.filter(mr => !mr.draft).length; // Non-draft MRs
+  const totalDraftMRs = data.mergeRequests.filter(mr => mr.draft).length; // Draft MRs
+  
   const nextReviewer = getNextReviewer(data.engineerStats);
   const hasComplexityData = data.mrComplexities.length > 0;
 
@@ -121,9 +122,9 @@ export default function Dashboard({
         )}
 
         <StatsOverview
+          totalMRs={totalMRs}
           totalOpenMRs={totalOpenMRs}
           totalDraftMRs={totalDraftMRs}
-          totalReviews={totalReviews}
           isGroup={isGroup}
           projectPath={projectPath}
         />
