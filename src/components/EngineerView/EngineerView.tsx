@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, User, TrendingUp, GitMerge, Clock, Eye, Code, Target, Calendar, BarChart3 } from 'lucide-react';
+import { ArrowLeft, User, TrendingUp, GitMerge, Clock, Eye, Code, Target, Calendar, BarChart3, Download } from 'lucide-react';
 import { EngineerStats, MergeRequest } from '../../types/gitlab';
 import { calculateWorkloadScore } from '../../utils/gitlab';
 import { fetchEngineerMRHistory, EngineerMRHistory } from '../../utils/engineerAnalytics';
@@ -22,6 +22,12 @@ interface EngineerViewProps {
   allMRs: MergeRequest[];
 }
 
+interface LoadingStage {
+  stage: string;
+  completed: boolean;
+  data?: any;
+}
+
 export default function EngineerView({ engineer, onBack, token, projectId, allMRs }: EngineerViewProps) {
   const [loading, setLoading] = useState(true);
   const [mrHistory, setMRHistory] = useState<EngineerMRHistory | null>(null);
@@ -32,6 +38,14 @@ export default function EngineerView({ engineer, onBack, token, projectId, allMR
     lastUpdated: null, 
     timeframes: [] 
   });
+  const [loadingStages, setLoadingStages] = useState<LoadingStage[]>([
+    { stage: 'Fetching MR data', completed: false },
+    { stage: 'Calculating basic metrics', completed: false },
+    { stage: 'Analyzing comments', completed: false },
+    { stage: 'Computing response times', completed: false },
+    { stage: 'Generating insights', completed: false }
+  ]);
+  const [rawAnalyticsData, setRawAnalyticsData] = useState<any>(null);
 
   useEffect(() => {
     if (token && projectId) {
@@ -44,15 +58,29 @@ export default function EngineerView({ engineer, onBack, token, projectId, allMR
     }
   }, [engineer.user.id, selectedTimeframe]);
 
+  const updateLoadingStage = (stageIndex: number, completed: boolean, data?: any) => {
+    setLoadingStages(prev => prev.map((stage, index) => 
+      index === stageIndex ? { ...stage, completed, data } : stage
+    ));
+  };
+
   const loadEngineerData = async () => {
     if (!token || !projectId) return;
     
     setLoading(true);
     setError(null);
+    setLoadingStages(prev => prev.map(stage => ({ ...stage, completed: false, data: undefined })));
 
     try {
-      const history = await fetchEngineerMRHistory(token, projectId, engineer.user.username, selectedTimeframe);
-      setMRHistory(history);
+      const history = await fetchEngineerMRHistoryProgressive(
+        token, 
+        projectId, 
+        engineer.user.username, 
+        selectedTimeframe,
+        updateLoadingStage,
+        setMRHistory,
+        setRawAnalyticsData
+      );
       
       const info = getEngineerCacheInfo(projectId, engineer.user.username);
       setCacheInfo(info);
@@ -117,6 +145,24 @@ export default function EngineerView({ engineer, onBack, token, projectId, allMR
     }
   };
 
+  const downloadCSV = () => {
+    if (!rawAnalyticsData || !mrHistory) {
+      alert('No data available for download');
+      return;
+    }
+
+    const csvData = generateCSVData(mrHistory, rawAnalyticsData, engineer);
+    const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `${engineer.user.username}_analytics_${selectedTimeframe}_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -125,25 +171,50 @@ export default function EngineerView({ engineer, onBack, token, projectId, allMR
             <div className="text-center">
               <div className="w-12 h-12 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Loading Engineer Analytics</h3>
-              <p className="text-gray-600">
+              <p className="text-gray-600 mb-6">
                 Analyzing performance data for {engineer.user.name} ({selectedTimeframe})...
               </p>
-              <div className="max-w-md mx-auto bg-blue-50 rounded-lg p-4 border border-blue-200 mt-6">
-                <div className="flex items-start space-x-3">
-                  <TrendingUp className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+              
+              {/* Progressive Loading Stages */}
+              <div className="max-w-md mx-auto space-y-3">
+                {loadingStages.map((stage, index) => (
+                  <div key={index} className="flex items-center space-x-3 text-sm">
+                    <div className={`w-4 h-4 rounded-full flex items-center justify-center ${
+                      stage.completed 
+                        ? 'bg-green-500 text-white' 
+                        : index === loadingStages.findIndex(s => !s.completed)
+                        ? 'bg-indigo-500 text-white animate-pulse'
+                        : 'bg-gray-200'
+                    }`}>
+                      {stage.completed ? '✓' : index + 1}
+                    </div>
+                    <span className={`${
+                      stage.completed 
+                        ? 'text-green-700 font-medium' 
+                        : index === loadingStages.findIndex(s => !s.completed)
+                        ? 'text-indigo-700 font-medium'
+                        : 'text-gray-500'
+                    }`}>
+                      {stage.stage}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Show partial data if available */}
+              {mrHistory && (
+                <div className="mt-8 p-4 bg-blue-50 rounded-lg border border-blue-200">
                   <div className="text-sm text-blue-800">
-                    <p className="font-semibold mb-1">What we're analyzing:</p>
-                    <ul className="text-left space-y-1">
-                      <li>• Authored and reviewed merge requests</li>
-                      <li>• Comment patterns and review cycles</li>
-                      <li>• Time to merge and response metrics</li>
-                      <li>• Response time to reviewer feedback</li>
-                      <li>• Software engineering insights from feedback</li>
-                      <li>• Weekly activity trends</li>
-                    </ul>
+                    <p className="font-semibold mb-2">Partial data loaded:</p>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div>Authored MRs: {mrHistory.authoredMRs.length}</div>
+                      <div>Reviewed MRs: {mrHistory.reviewedMRs.length}</div>
+                      <div>Merged MRs: {mrHistory.mergedMRs.length}</div>
+                      <div>Comments: {mrHistory.totalComments}</div>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
@@ -192,15 +263,28 @@ export default function EngineerView({ engineer, onBack, token, projectId, allMR
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <EngineerHeader 
-          engineer={engineer} 
-          onBack={onBack}
-          selectedTimeframe={selectedTimeframe}
-          onTimeframeChange={setSelectedTimeframe}
-          loading={loading}
-          cacheInfo={cacheInfo}
-          onClearCache={handleClearCache}
-        />
+        <div className="flex items-center justify-between mb-8">
+          <EngineerHeader 
+            engineer={engineer} 
+            onBack={onBack}
+            selectedTimeframe={selectedTimeframe}
+            onTimeframeChange={setSelectedTimeframe}
+            loading={loading}
+            cacheInfo={cacheInfo}
+            onClearCache={handleClearCache}
+          />
+          
+          {/* CSV Download Button */}
+          {rawAnalyticsData && (
+            <button
+              onClick={downloadCSV}
+              className="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Download CSV
+            </button>
+          )}
+        </div>
 
         <div className="space-y-8">
           <CurrentWorkload engineer={engineer} />
@@ -246,4 +330,227 @@ export default function EngineerView({ engineer, onBack, token, projectId, allMR
       </div>
     </div>
   );
+}
+
+// Progressive loading function
+async function fetchEngineerMRHistoryProgressive(
+  token: string,
+  projectId: string,
+  username: string,
+  timeframe: '7d' | '30d' | '90d',
+  updateStage: (index: number, completed: boolean, data?: any) => void,
+  setPartialData: (data: EngineerMRHistory) => void,
+  setRawData: (data: any) => void
+): Promise<EngineerMRHistory> {
+  const { fetchEngineerMRHistoryWithStages } = await import('../../utils/engineerAnalytics');
+  
+  return fetchEngineerMRHistoryWithStages(
+    token,
+    projectId,
+    username,
+    timeframe,
+    updateStage,
+    setPartialData,
+    setRawData
+  );
+}
+
+// CSV generation function
+function generateCSVData(mrHistory: EngineerMRHistory, rawData: any, engineer: EngineerStats): string {
+  const headers = [
+    'Data Type',
+    'MR IID',
+    'MR Title',
+    'MR State',
+    'Created At',
+    'Merged At',
+    'Author',
+    'Reviewers',
+    'Comments Count',
+    'Lines Added',
+    'Lines Deleted',
+    'Files Changed',
+    'Time to Merge (hours)',
+    'Response Time (hours)',
+    'Comment Body',
+    'Comment Author',
+    'Comment Created At',
+    'Comment Category',
+    'Complexity Score'
+  ];
+
+  const rows: string[] = [headers.join(',')];
+
+  // Add MR data
+  mrHistory.authoredMRs.forEach(mr => {
+    const mrData = rawData.mrDetails?.[mr.iid] || {};
+    rows.push([
+      'Authored MR',
+      mr.iid,
+      `"${mr.title.replace(/"/g, '""')}"`,
+      mr.state,
+      mr.created_at,
+      mr.merged_at || '',
+      mr.author.name,
+      mr.reviewers.map(r => r.name).join(';'),
+      mrData.commentCount || 0,
+      mrData.linesAdded || 0,
+      mrData.linesDeleted || 0,
+      mrData.filesChanged || 0,
+      mrData.timeToMerge || '',
+      mrData.responseTime || '',
+      '',
+      '',
+      '',
+      '',
+      mrData.complexityScore || ''
+    ].map(field => typeof field === 'string' && field.includes(',') ? `"${field}"` : field).join(','));
+  });
+
+  mrHistory.reviewedMRs.forEach(mr => {
+    rows.push([
+      'Reviewed MR',
+      mr.iid,
+      `"${mr.title.replace(/"/g, '""')}"`,
+      mr.state,
+      mr.created_at,
+      mr.merged_at || '',
+      mr.author.name,
+      mr.reviewers.map(r => r.name).join(';'),
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      ''
+    ].map(field => typeof field === 'string' && field.includes(',') ? `"${field}"` : field).join(','));
+  });
+
+  // Add comment data
+  if (rawData.comments) {
+    rawData.comments.forEach((comment: any) => {
+      rows.push([
+        'Comment',
+        comment.mrIid || '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        `"${comment.body.replace(/"/g, '""')}"`,
+        comment.author,
+        comment.created_at,
+        comment.category || '',
+        ''
+      ].map(field => typeof field === 'string' && field.includes(',') ? `"${field}"` : field).join(','));
+    });
+  }
+
+  // Add response time data
+  if (rawData.responseTimeData) {
+    rawData.responseTimeData.forEach((response: any) => {
+      rows.push([
+        'Response Time',
+        response.mrIid || '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        response.responseTimeHours || '',
+        `"${response.reviewerComment.replace(/"/g, '""')}"`,
+        response.reviewerAuthor,
+        response.commentTime,
+        '',
+        ''
+      ].map(field => typeof field === 'string' && field.includes(',') ? `"${field}"` : field).join(','));
+    });
+  }
+
+  // Add summary metrics
+  rows.push([
+    'Summary Metric',
+    'Avg Comments per MR',
+    mrHistory.avgCommentsPerAuthoredMR.toString(),
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    ''
+  ].join(','));
+
+  rows.push([
+    'Summary Metric',
+    'Avg Time to Merge',
+    mrHistory.avgTimeToMerge.toString(),
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    ''
+  ].join(','));
+
+  rows.push([
+    'Summary Metric',
+    'Avg Response Time',
+    mrHistory.avgResponseTime.toString(),
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    '',
+    ''
+  ].join(','));
+
+  return rows.join('\n');
 }
