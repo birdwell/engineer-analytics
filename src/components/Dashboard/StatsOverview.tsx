@@ -1,64 +1,155 @@
 import React from 'react';
-import { GitBranch, Eye, FileText, Users } from 'lucide-react';
+import { GitBranch, Eye, FileText, Users, ExternalLink } from 'lucide-react';
 
 interface StatsOverviewProps {
   totalOpenMRs: number;
   totalDraftMRs: number;
   totalReviews: number;
   isGroup?: boolean;
+  projectPath?: string;
 }
 
-export default function StatsOverview({ totalOpenMRs, totalDraftMRs, totalReviews, isGroup }: StatsOverviewProps) {
+export default function StatsOverview({ 
+  totalOpenMRs, 
+  totalDraftMRs, 
+  totalReviews, 
+  isGroup,
+  projectPath 
+}: StatsOverviewProps) {
+  const getGitLabMRUrl = (filter: 'open' | 'draft' | 'reviews') => {
+    if (!projectPath) return null;
+    
+    const baseUrl = isGroup 
+      ? `https://gitlab.com/groups/${projectPath}/-/merge_requests`
+      : `https://gitlab.com/${projectPath}/-/merge_requests`;
+    
+    const params = new URLSearchParams({
+      sort: 'updated_desc',
+      first_page_size: '20'
+    });
+    
+    switch (filter) {
+      case 'open':
+        params.set('state', 'opened');
+        params.set('not[draft]', 'yes'); // Exclude drafts
+        break;
+      case 'draft':
+        params.set('state', 'opened');
+        params.set('draft', 'yes');
+        break;
+      case 'reviews':
+        params.set('state', 'opened');
+        params.set('reviewer_id', 'Any'); // Show MRs that need reviews
+        break;
+    }
+    
+    return `${baseUrl}?${params.toString()}`;
+  };
+
+  const handleCardClick = (filter: 'open' | 'draft' | 'reviews', count: number) => {
+    if (count === 0) {
+      return; // Don't navigate if there are no items
+    }
+    
+    const url = getGitLabMRUrl(filter);
+    if (url) {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+  };
+
+  const getCardClasses = (count: number) => {
+    const baseClasses = "bg-white rounded-xl shadow-lg p-6 transition-all duration-200";
+    
+    if (count === 0) {
+      return `${baseClasses} opacity-75`;
+    }
+    
+    return `${baseClasses} hover:shadow-xl hover:-translate-y-1 cursor-pointer group`;
+  };
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-      <div className="bg-white rounded-xl shadow-lg p-6">
+      {/* Open Merge Requests Card */}
+      <div 
+        className={getCardClasses(totalOpenMRs)}
+        onClick={() => handleCardClick('open', totalOpenMRs)}
+        title={totalOpenMRs > 0 ? "Click to view open merge requests in GitLab" : "No open merge requests"}
+      >
         <div className="flex items-center">
           <div className="flex-shrink-0">
-            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200 transition-colors">
               <GitBranch className="w-5 h-5 text-blue-600" />
             </div>
           </div>
-          <div className="ml-4">
-            <div className="text-3xl font-bold text-gray-900">{totalOpenMRs}</div>
+          <div className="ml-4 flex-1">
+            <div className="flex items-center space-x-2">
+              <div className="text-3xl font-bold text-gray-900">{totalOpenMRs}</div>
+              {totalOpenMRs > 0 && (
+                <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-blue-600 opacity-0 group-hover:opacity-100 transition-all duration-200" />
+              )}
+            </div>
             <div className="text-sm font-medium text-gray-600">
-              Open Merge Requests{isGroup && (
-                <span className="block text-xs text-indigo-600">Across all group projects</span>
+              Open Merge Requests
+              {isGroup && (
+                <span className="block text-xs text-indigo-600 mt-1">Across all group projects</span>
               )}
             </div>
           </div>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-lg p-6">
+      {/* Draft Merge Requests Card */}
+      <div 
+        className={getCardClasses(totalDraftMRs)}
+        onClick={() => handleCardClick('draft', totalDraftMRs)}
+        title={totalDraftMRs > 0 ? "Click to view draft merge requests in GitLab" : "No draft merge requests"}
+      >
         <div className="flex items-center">
           <div className="flex-shrink-0">
-            <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+            <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center group-hover:bg-gray-200 transition-colors">
               <FileText className="w-5 h-5 text-gray-600" />
             </div>
           </div>
-          <div className="ml-4">
-            <div className="text-3xl font-bold text-gray-900">{totalDraftMRs}</div>
+          <div className="ml-4 flex-1">
+            <div className="flex items-center space-x-2">
+              <div className="text-3xl font-bold text-gray-900">{totalDraftMRs}</div>
+              {totalDraftMRs > 0 && (
+                <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-gray-600 opacity-0 group-hover:opacity-100 transition-all duration-200" />
+              )}
+            </div>
             <div className="text-sm font-medium text-gray-600">
-              Draft Merge Requests{isGroup && (
-                <span className="block text-xs text-indigo-600">Across all group projects</span>
+              Draft Merge Requests
+              {isGroup && (
+                <span className="block text-xs text-indigo-600 mt-1">Across all group projects</span>
               )}
             </div>
           </div>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-lg p-6">
+      {/* Pending Reviews Card */}
+      <div 
+        className={getCardClasses(totalReviews)}
+        onClick={() => handleCardClick('reviews', totalReviews)}
+        title={totalReviews > 0 ? "Click to view merge requests needing reviews in GitLab" : "No pending reviews"}
+      >
         <div className="flex items-center">
           <div className="flex-shrink-0">
-            <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
+            <div className="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center group-hover:bg-amber-200 transition-colors">
               <Eye className="w-5 h-5 text-amber-600" />
             </div>
           </div>
-          <div className="ml-4">
-            <div className="text-3xl font-bold text-gray-900">{totalReviews}</div>
+          <div className="ml-4 flex-1">
+            <div className="flex items-center space-x-2">
+              <div className="text-3xl font-bold text-gray-900">{totalReviews}</div>
+              {totalReviews > 0 && (
+                <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-amber-600 opacity-0 group-hover:opacity-100 transition-all duration-200" />
+              )}
+            </div>
             <div className="text-sm font-medium text-gray-600">
-              Pending Reviews{isGroup && (
-                <span className="block text-xs text-indigo-600">Across all group projects</span>
+              Pending Reviews
+              {isGroup && (
+                <span className="block text-xs text-indigo-600 mt-1">Across all group projects</span>
               )}
             </div>
           </div>

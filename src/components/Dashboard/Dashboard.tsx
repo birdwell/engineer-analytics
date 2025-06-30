@@ -124,6 +124,7 @@ export default function Dashboard({
           totalDraftMRs={totalDraftMRs}
           totalReviews={totalReviews}
           isGroup={isGroup}
+          projectPath={projectPath}
         />
 
         {/* Review Distribution Chart */}
