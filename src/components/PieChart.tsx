@@ -136,10 +136,10 @@ export default function PieChart({ data, title }: PieChartProps) {
                   />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-gray-900 group-hover:text-indigo-600 transition-colors truncate">
+                      <span className="text-sm font-medium text-gray-900 group-hover:text-indigo-600 transition-colors break-words">
                         {item.name}
                       </span>
-                      <div className="flex items-center space-x-2 ml-2">
+                      <div className="flex items-center space-x-2 ml-2 flex-shrink-0">
                         <span className="text-sm font-semibold text-gray-900">
                           {item.value}
                         </span>
