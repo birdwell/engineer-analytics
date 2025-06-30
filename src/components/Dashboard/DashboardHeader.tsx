@@ -1,5 +1,5 @@
 import React from 'react';
-import { RefreshCw, LogOut, Loader2, Database, BarChart3, Users, Folder, GitBranch } from 'lucide-react';
+import { RefreshCw, LogOut, Loader2, Database, BarChart3, Users, Folder, GitBranch, ExternalLink } from 'lucide-react';
 
 interface DashboardHeaderProps {
   onRefresh: () => void;
@@ -24,6 +24,18 @@ export default function DashboardHeader({
   projectPath,
   isGroup
 }: DashboardHeaderProps) {
+  const getGitLabUrl = () => {
+    if (!projectPath) return null;
+    
+    if (isGroup) {
+      return `https://gitlab.com/groups/${projectPath}`;
+    } else {
+      return `https://gitlab.com/${projectPath}`;
+    }
+  };
+
+  const gitlabUrl = getGitLabUrl();
+
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
       {/* Main Header Row */}
@@ -77,20 +89,44 @@ export default function DashboardHeader({
         {/* Project Badge */}
         {projectPath && (
           <div className="flex items-center space-x-3 mb-3 sm:mb-0">
-            <div className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg border border-indigo-200">
-              {isGroup ? (
-                <Users className="w-4 h-4 text-indigo-600" />
-              ) : (
-                <Folder className="w-4 h-4 text-indigo-600" />
-              )}
-              <span className="text-sm font-medium text-indigo-700">
-                {isGroup ? 'Group' : 'Project'}
-              </span>
-              <div className="w-1 h-1 bg-indigo-400 rounded-full"></div>
-              <span className="text-sm font-semibold text-indigo-800 max-w-xs truncate">
-                {projectPath}
-              </span>
-            </div>
+            {gitlabUrl ? (
+              <a
+                href={gitlabUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg border border-indigo-200 hover:from-indigo-100 hover:to-purple-100 hover:border-indigo-300 transition-all duration-200 cursor-pointer group"
+                title={`Open ${isGroup ? 'group' : 'project'} in GitLab`}
+              >
+                {isGroup ? (
+                  <Users className="w-4 h-4 text-indigo-600 group-hover:text-indigo-700" />
+                ) : (
+                  <Folder className="w-4 h-4 text-indigo-600 group-hover:text-indigo-700" />
+                )}
+                <span className="text-sm font-medium text-indigo-700 group-hover:text-indigo-800">
+                  {isGroup ? 'Group' : 'Project'}
+                </span>
+                <div className="w-1 h-1 bg-indigo-400 rounded-full"></div>
+                <span className="text-sm font-semibold text-indigo-800 group-hover:text-indigo-900 max-w-xs truncate">
+                  {projectPath}
+                </span>
+                <ExternalLink className="w-3 h-3 text-indigo-500 group-hover:text-indigo-600 opacity-60 group-hover:opacity-100 transition-all duration-200" />
+              </a>
+            ) : (
+              <div className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg border border-indigo-200">
+                {isGroup ? (
+                  <Users className="w-4 h-4 text-indigo-600" />
+                ) : (
+                  <Folder className="w-4 h-4 text-indigo-600" />
+                )}
+                <span className="text-sm font-medium text-indigo-700">
+                  {isGroup ? 'Group' : 'Project'}
+                </span>
+                <div className="w-1 h-1 bg-indigo-400 rounded-full"></div>
+                <span className="text-sm font-semibold text-indigo-800 max-w-xs truncate">
+                  {projectPath}
+                </span>
+              </div>
+            )}
             
             {isGroup && (
               <div className="px-3 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full border border-blue-200">
