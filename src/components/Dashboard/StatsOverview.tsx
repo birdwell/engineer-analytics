@@ -38,8 +38,9 @@ export default function StatsOverview({
         params.set('draft', 'yes');
         break;
       case 'reviews':
+        // For reviews, we want non-draft open MRs (same as open filter)
         params.set('state', 'opened');
-        params.set('reviewer_id', 'Any'); // Show MRs that need reviews
+        params.set('not[draft]', 'yes'); // Exclude drafts
         break;
     }
     
@@ -127,11 +128,11 @@ export default function StatsOverview({
         </div>
       </div>
 
-      {/* Pending Reviews Card */}
+      {/* Open MRs Needing Review Card */}
       <div 
         className={getCardClasses(totalReviews)}
         onClick={() => handleCardClick('reviews', totalReviews)}
-        title={totalReviews > 0 ? "Click to view merge requests needing reviews in GitLab" : "No pending reviews"}
+        title={totalReviews > 0 ? "Click to view open merge requests needing review in GitLab" : "No MRs needing review"}
       >
         <div className="flex items-center">
           <div className="flex-shrink-0">
@@ -147,7 +148,7 @@ export default function StatsOverview({
               )}
             </div>
             <div className="text-sm font-medium text-gray-600">
-              Pending Reviews
+              Open MRs Needing Review
               {isGroup && (
                 <span className="block text-xs text-indigo-600 mt-1">Across all group projects</span>
               )}

@@ -64,7 +64,8 @@ export default function Dashboard({
 
   const totalOpenMRs = data.mergeRequests.filter(mr => !mr.draft).length;
   const totalDraftMRs = data.mergeRequests.filter(mr => mr.draft).length;
-  const totalReviews = data.engineerStats.reduce((sum, stat) => sum + stat.assignedReviews, 0);
+  // Fix: Total reviews should be non-draft open MRs (same as totalOpenMRs)
+  const totalReviews = totalOpenMRs;
   const nextReviewer = getNextReviewer(data.engineerStats);
   const hasComplexityData = data.mrComplexities.length > 0;
 
