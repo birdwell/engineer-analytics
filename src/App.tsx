@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import TokenForm from './components/TokenForm';
 import Dashboard from './components/Dashboard';
-import Analytics from './components/Analytics';
 import { fetchBasicDashboardData, fetchEnhancedDashboardData } from './utils/gitlab';
 import { saveCredentials, loadCredentials, clearCredentials, hasStoredCredentials } from './utils/storage';
 import { DashboardData } from './types/gitlab';
