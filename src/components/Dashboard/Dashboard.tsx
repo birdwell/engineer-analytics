@@ -14,7 +14,6 @@ interface DashboardProps {
   data: DashboardData;
   onRefresh: () => void;
   onDisconnect: () => void;
-  onShowAnalytics: () => void;
   loading: boolean;
   enhancementLoading?: boolean;
   projectId?: string;
@@ -26,7 +25,6 @@ export default function Dashboard({
   data, 
   onRefresh, 
   onDisconnect, 
-  onShowAnalytics, 
   loading, 
   enhancementLoading = false, 
   projectId, 
@@ -105,7 +103,6 @@ export default function Dashboard({
         <DashboardHeader
           onRefresh={onRefresh}
           onDisconnect={onDisconnect}
-          onShowAnalytics={onShowAnalytics}
           loading={loading}
           enhancementLoading={enhancementLoading}
           hasComplexityData={hasComplexityData}
