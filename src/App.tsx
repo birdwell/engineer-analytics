@@ -133,11 +133,7 @@ function App() {
     setEnhancementLoading(false);
     setCurrentView('dashboard');
   };
-
-  const handleShowAnalytics = () => {
-    setCurrentView('analytics');
-  };
-
+  
   const handleBackToDashboard = () => {
     setCurrentView('dashboard');
   };
@@ -167,23 +163,11 @@ function App() {
     );
   }
 
-  if (currentView === 'analytics') {
-    return (
-      <Analytics
-        data={dashboardData}
-        onBack={handleBackToDashboard}
-        token={credentials?.token}
-        projectId={credentials?.projectId}
-      />
-    );
-  }
-
   return (
     <Dashboard
       data={dashboardData}
       onRefresh={handleRefresh}
       onDisconnect={handleDisconnect}
-      onShowAnalytics={handleShowAnalytics}
       loading={loading}
       enhancementLoading={enhancementLoading}
       projectId={credentials?.projectId}
