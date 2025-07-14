@@ -4,7 +4,6 @@ import { RefreshCw, LogOut, Loader2, Database, BarChart3, Users, Folder, GitBran
 interface DashboardHeaderProps {
   onRefresh: () => void;
   onDisconnect: () => void;
-  onShowAnalytics: () => void;
   loading: boolean;
   enhancementLoading: boolean;
   hasComplexityData: boolean;
@@ -16,7 +15,6 @@ interface DashboardHeaderProps {
 export default function DashboardHeader({
   onRefresh,
   onDisconnect,
-  onShowAnalytics,
   loading,
   enhancementLoading,
   hasComplexityData,
@@ -57,14 +55,6 @@ export default function DashboardHeader({
 
         {/* Action Buttons */}
         <div className="flex items-center space-x-3">
-          <button
-            onClick={onShowAnalytics}
-            className="inline-flex items-center px-4 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-sm font-medium rounded-lg shadow-sm hover:from-indigo-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200"
-          >
-            <BarChart3 className="w-4 h-4 mr-2" />
-            Team Analytics
-          </button>
-          
           <button
             onClick={onDisconnect}
             className="inline-flex items-center px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
