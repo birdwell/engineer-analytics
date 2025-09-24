@@ -2,6 +2,7 @@ import React from 'react';
 import { User } from 'lucide-react';
 import { EngineerStats } from '../../types/gitlab';
 import { calculateWorkloadScore } from '../../utils/gitlab';
+import { getEngineerTitle } from '../../utils/engineerTitles';
 
 interface TableRowProps {
   stat: EngineerStats;
@@ -20,6 +21,7 @@ export default function TableRow({
 }: TableRowProps) {
   const workloadScore = calculateWorkloadScore(stat);
   const totalActivity = stat.openMRs + stat.draftMRs + stat.assignedReviews;
+  const engineerTitle = getEngineerTitle(stat.user.username);
 
   // Helper functions for color classes
   const getOpenMRsColorClasses = (count: number): string => {
@@ -88,8 +90,11 @@ export default function TableRow({
             >
               {stat.user.name}
             </div>
-            <div className="text-sm text-gray-500 truncate">
-              @{stat.user.username}
+            <div className="text-sm text-gray-500 truncate space-y-1">
+              <div>@{stat.user.username}</div>
+              {engineerTitle && (
+                <div className="text-xs text-indigo-600 font-medium">{engineerTitle}</div>
+              )}
             </div>
           </div>
         </div>

@@ -2,6 +2,7 @@ import React from 'react';
 import { Users } from 'lucide-react';
 import { EngineerStats } from '../../types/gitlab';
 import { calculateWorkloadScore } from '../../utils/gitlab';
+import { getEngineerTitle } from '../../utils/engineerTitles';
 
 interface NextReviewerCardProps {
   nextReviewer: EngineerStats;
@@ -9,6 +10,8 @@ interface NextReviewerCardProps {
 }
 
 export default function NextReviewerCard({ nextReviewer, hasComplexityData }: NextReviewerCardProps) {
+  const engineerTitle = getEngineerTitle(nextReviewer.user.username);
+  
   return (
     <div className="mb-8">
       <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
@@ -29,6 +32,9 @@ export default function NextReviewerCard({ nextReviewer, hasComplexityData }: Ne
               )}
               <div>
                 <div className="text-base font-medium">{nextReviewer.user.name} (@{nextReviewer.user.username})</div>
+                {engineerTitle && (
+                  <div className="text-sm text-indigo-200 font-medium">{engineerTitle}</div>
+                )}
                 <div className="text-sm text-indigo-100 mt-1">
                   <span className="font-medium">{nextReviewer.assignedReviews} reviews</span>, <span className="font-medium">{nextReviewer.openMRs} open MRs</span>, <span className="font-medium">{nextReviewer.draftMRs} drafts</span>
                 </div>
