@@ -148,11 +148,6 @@ export default function MRTable({
                 ? `Workload analysis including MR complexity based on file changes and line modifications${isGroup ? ' across all group projects' : ''}`
                 : `Basic workload analysis - complexity data loading in background${isGroup ? ' for all group projects' : ''}`
               }
-              {onEngineerClick && (
-                <span className="block text-indigo-600 font-medium mt-1">
-                  Click on engineer names to view detailed individual analytics
-                </span>
-              )}
             </p>
           </div>
           {enhancementLoading && (
