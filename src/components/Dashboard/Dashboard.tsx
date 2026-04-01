@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { DashboardData, EngineerStats } from '../../types/gitlab';
-import { getNextReviewer } from '../../utils/gitlab';
-import { getCacheStats } from '../../utils/complexityCache';
+import { getNextReviewer, isGroupPath } from '../../utils/gitlab';
 import PieChart from '../PieChart';
 import MRTable from '../MRTable';
 import EngineerView from '../EngineerView/EngineerView';
@@ -21,43 +20,23 @@ interface DashboardProps {
   token?: string;
 }
 
-export default function Dashboard({ 
-  data, 
-  onRefresh, 
-  onDisconnect, 
-  loading, 
-  enhancementLoading = false, 
-  projectId, 
-  projectPath, 
-  token 
+export default function Dashboard({
+  data,
+  onRefresh,
+  onDisconnect,
+  loading,
+  enhancementLoading = false,
+  projectId,
+  projectPath,
+  token
 }: DashboardProps) {
   const [selectedEngineer, setSelectedEngineer] = useState<EngineerStats | null>(null);
   const [isGroup, setIsGroup] = useState<boolean>(false);
 
-  // Detect if this is a group analysis
   useEffect(() => {
-    const detectGroupAnalysis = async () => {
-      if (token && projectId) {
-        try {
-          // Try to fetch as a group first
-          const groupResponse = await fetch(
-            `https://gitlab.com/api/v4/groups/${encodeURIComponent(projectId)}`,
-            {
-              headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-              },
-            }
-          );
-          
-          setIsGroup(groupResponse.ok);
-        } catch (error) {
-          setIsGroup(false);
-        }
-      }
-    };
-
-    detectGroupAnalysis();
+    if (token && projectId) {
+      isGroupPath(token, projectId).then(setIsGroup).catch(() => setIsGroup(false));
+    }
   }, [token, projectId]);
 
   // Fixed calculations
