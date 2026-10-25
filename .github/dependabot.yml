@@ -1,0 +1,14 @@
+# Security-only Dependabot config: version updates disabled
+# (open-pull-requests-limit: 0); security fixes arrive as grouped PRs.
+version: 2
+
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 0
+    groups:
+      security:
+        applies-to: security-updates
+        patterns: ["*"]
