@@ -94,7 +94,7 @@ export async function fetchMRComplexity(
     );
 
     const changes = data.changes || [];
-    let filesChanged = changes.length;
+    const filesChanged = changes.length;
     let linesAdded = 0;
     let linesDeleted = 0;
 
@@ -156,7 +156,7 @@ export async function fetchAllMRComplexities(
   const uncachedMRs: MergeRequest[] = [];
 
   for (const mr of mergeRequests) {
-    const pid = resolvedIsGroup ? ((mr as any).project_id || projectId) : projectId;
+    const pid = resolvedIsGroup ? (mr.project_id || projectId) : projectId;
     const cacheKey = `${pid}_${mr.iid}`;
     const cached = getCachedComplexity(cacheKey, mr.iid);
     if (cached) {
@@ -173,7 +173,7 @@ export async function fetchAllMRComplexities(
         token,
         projectId,
         mr.iid,
-        resolvedIsGroup ? (mr as any).project_id : undefined
+        resolvedIsGroup ? mr.project_id : undefined
       ),
       10,
       30

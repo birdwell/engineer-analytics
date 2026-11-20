@@ -1,4 +1,3 @@
-import React from 'react';
 import { MessageSquare, TrendingUp, AlertTriangle, CheckCircle, BookOpen, Target, Lightbulb } from 'lucide-react';
 
 interface CommentAnalysisProps {
@@ -56,7 +55,7 @@ export default function CommentAnalysis({ analysis }: CommentAnalysisProps) {
 
   if (analysis.totalComments === 0) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="bg-white rounded-xl shadow-xs border border-gray-200 p-6">
         <div className="flex items-center space-x-3 mb-6">
           <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
             <MessageSquare className="w-5 h-5 text-gray-600" />
@@ -77,7 +76,7 @@ export default function CommentAnalysis({ analysis }: CommentAnalysisProps) {
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <div className="bg-white rounded-xl shadow-xs border border-gray-200 p-6">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
@@ -137,7 +136,7 @@ export default function CommentAnalysis({ analysis }: CommentAnalysisProps) {
           {analysis.recommendations.slice(0, 3).map((rec, index) => (
             <div key={index} className="border border-gray-200 rounded-lg p-4">
               <div className="flex items-start space-x-3">
-                <div className="flex-shrink-0 mt-0.5">
+                <div className="shrink-0 mt-0.5">
                   {getPriorityIcon(rec.priority)}
                 </div>
                 <div className="flex-1">
@@ -147,7 +146,7 @@ export default function CommentAnalysis({ analysis }: CommentAnalysisProps) {
                     <div className="text-xs font-medium text-gray-700 mb-1">Action Items:</div>
                     {rec.actionItems.slice(0, 3).map((item, itemIndex) => (
                       <div key={itemIndex} className="flex items-start space-x-2 text-xs text-gray-600">
-                        <CheckCircle className="w-3 h-3 text-green-500 mt-0.5 flex-shrink-0" />
+                        <CheckCircle className="w-3 h-3 text-green-500 mt-0.5 shrink-0" />
                         <span>{item}</span>
                       </div>
                     ))}
@@ -165,7 +164,7 @@ export default function CommentAnalysis({ analysis }: CommentAnalysisProps) {
           <h5 className="font-medium text-gray-900 mb-2">Recent Feedback Examples</h5>
           <div className="space-y-2">
             {Object.entries(analysis.categorizedComments)
-              .filter(([_, data]) => data.examples.length > 0)
+              .filter(([, data]) => data.examples.length > 0)
               .slice(0, 2)
               .map(([category, data]) => (
                 <div key={category} className="text-sm">

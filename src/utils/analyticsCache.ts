@@ -9,9 +9,9 @@ interface ReviewMetrics {
   avgTimeToFirstReview: number;
   avgTimeToMerge: number;
   avgReviewCycles: number;
-  fastestReviews: any[];
-  slowestReviews: any[];
-  reviewerResponseTimes: any[];
+  fastestReviews: unknown[];
+  slowestReviews: unknown[];
+  reviewerResponseTimes: unknown[];
   totalMRsAnalyzed: number;
   mergedMRsAnalyzed: number;
   openMRsAnalyzed: number;

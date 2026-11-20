@@ -24,6 +24,38 @@ export interface EngineerMRHistory {
   responseTimeMetrics: ResponseTimeMetrics;
 }
 
+export interface RawMrDetail {
+  commentCount?: number;
+  linesAdded?: number;
+  linesDeleted?: number;
+  filesChanged?: number;
+  timeToMerge?: number | null;
+  responseTime?: number | string;
+  complexityScore?: number | string;
+}
+
+export interface RawAnalyticsComment {
+  mrIid?: number | string;
+  body: string;
+  author: string;
+  created_at: string;
+  category?: string;
+}
+
+export interface RawAnalyticsResponse {
+  mrIid?: number | string;
+  responseTimeHours?: number | string;
+  reviewerComment: string;
+  reviewerAuthor: string;
+  commentTime?: string;
+}
+
+export interface RawAnalyticsData {
+  mrDetails: Record<number, RawMrDetail>;
+  comments: RawAnalyticsComment[];
+  responseTimeData: RawAnalyticsResponse[];
+}
+
 function getTimeframeCutoff(timeframe: '7d' | '30d' | '90d'): Date {
   const now = new Date();
   const days = timeframe === '7d' ? 7 : timeframe === '30d' ? 30 : 90;
@@ -113,9 +145,9 @@ export async function fetchEngineerMRHistoryWithStages(
   projectId: string,
   username: string,
   timeframe: '7d' | '30d' | '90d' = '30d',
-  updateStage: (index: number, completed: boolean, data?: any) => void,
+  updateStage: (index: number, completed: boolean, data?: unknown) => void,
   setPartialData: (data: EngineerMRHistory) => void,
-  setRawData: (data: any) => void
+  setRawData: (data: RawAnalyticsData) => void
 ): Promise<EngineerMRHistory> {
   const cached = getCachedEngineerData(projectId, username, timeframe);
   if (cached) {
@@ -124,7 +156,7 @@ export async function fetchEngineerMRHistoryWithStages(
     return cached;
   }
 
-  const rawAnalyticsData: any = { mrDetails: {}, comments: [], responseTimeData: [] };
+  const rawAnalyticsData: RawAnalyticsData = { mrDetails: {}, comments: [], responseTimeData: [] };
 
   const encodedProjectId = encodeURIComponent(projectId);
   const cutoff = getTimeframeCutoff(timeframe).toISOString();
@@ -173,8 +205,8 @@ export async function fetchEngineerMRHistoryWithStages(
   for (const mr of mrSlice) {
     rawAnalyticsData.mrDetails[mr.iid] = {
       commentCount: detailedMetrics.totalComments,
-      timeToMerge: mr.state === 'merged' && (mr as any).merged_at
-        ? hoursDiff(mr.created_at, (mr as any).merged_at)
+      timeToMerge: mr.state === 'merged' && mr.merged_at
+        ? hoursDiff(mr.created_at, mr.merged_at)
         : null
     };
   }
@@ -241,8 +273,8 @@ function computeDetailedMetrics(
       responseCount++;
     }
 
-    if (mr.state === 'merged' && (mr as any).merged_at) {
-      totalMergeTime += hoursDiff(mr.created_at, (mr as any).merged_at);
+    if (mr.state === 'merged' && mr.merged_at) {
+      totalMergeTime += hoursDiff(mr.created_at, mr.merged_at);
       mergedCount++;
     }
 
@@ -263,9 +295,9 @@ function hoursDiff(start: string, end: string): number {
 }
 
 function calculateWeeklyStats(
-  authoredMRs: any[],
-  reviewedMRs: any[],
-  mergedMRs: any[],
+  authoredMRs: MergeRequest[],
+  reviewedMRs: MergeRequest[],
+  mergedMRs: MergeRequest[],
   timeframe: '7d' | '30d' | '90d'
 ): Array<{ week: string; authored: number; reviewed: number; merged: number }> {
   const weekMap = new Map<string, { authored: number; reviewed: number; merged: number }>();

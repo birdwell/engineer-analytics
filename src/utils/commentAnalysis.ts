@@ -153,7 +153,7 @@ export function analyzeComments(comments: string[]): CommentAnalysisResult {
     };
   }
 
-  const categorizedComments: { [category: string]: any } = {};
+  const categorizedComments: CommentAnalysisResult['categorizedComments'] = {};
 
   for (const pattern of COMMENT_PATTERNS) {
     categorizedComments[pattern.category] = {
@@ -188,8 +188,8 @@ export function analyzeComments(comments: string[]): CommentAnalysisResult {
   }
 
   const topIssues = Object.entries(categorizedComments)
-    .filter(([_, data]: [string, any]) => data.count > 0)
-    .map(([category, data]: [string, any]) => ({
+    .filter(([, data]) => data.count > 0)
+    .map(([category, data]) => ({
       category,
       count: data.count,
       percentage: data.percentage,
@@ -245,13 +245,8 @@ export async function fetchMRComments(
   return comments;
 }
 
-function generateRecommendations(topIssues: any[]): Array<{
-  principle: string;
-  description: string;
-  actionItems: string[];
-  priority: 'high' | 'medium' | 'low';
-}> {
-  const recommendations: any[] = [];
+function generateRecommendations(topIssues: CommentAnalysisResult['topIssues']): CommentAnalysisResult['recommendations'] {
+  const recommendations: CommentAnalysisResult['recommendations'] = [];
 
   const ACTION_ITEMS: Record<string, string[]> = {
     'Code Quality': [
@@ -348,7 +343,7 @@ function generateRecommendations(topIssues: any[]): Array<{
   return recommendations;
 }
 
-function calculateOverallScore(topIssues: any[], totalComments: number): number {
+function calculateOverallScore(topIssues: CommentAnalysisResult['topIssues'], totalComments: number): number {
   if (totalComments === 0) return 100;
 
   let penalty = 0;

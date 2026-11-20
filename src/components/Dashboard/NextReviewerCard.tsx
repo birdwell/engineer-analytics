@@ -1,4 +1,3 @@
-import React from 'react';
 import { Users } from 'lucide-react';
 import { EngineerStats } from '../../types/gitlab';
 import { calculateWorkloadScore } from '../../utils/gitlab';
@@ -14,7 +13,7 @@ export default function NextReviewerCard({ nextReviewer, hasComplexityData }: Ne
   
   return (
     <div className="mb-8">
-      <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
+      <div className="bg-linear-to-r from-indigo-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
         <div className="flex items-center space-x-4">
           <div className="flex-1">
             <h3 className="text-lg font-semibold mb-2">Recommended Next Reviewer</h3>

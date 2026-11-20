@@ -1,5 +1,4 @@
-import React from 'react';
-import { GitBranch, Eye, FileText, Users, ExternalLink } from 'lucide-react';
+import { GitBranch, Eye, FileText, ExternalLink } from 'lucide-react';
 
 interface StatsOverviewProps {
   totalMRs: number;
@@ -75,7 +74,7 @@ export default function StatsOverview({
         title={totalMRs > 0 ? "Click to view all merge requests in GitLab" : "No merge requests"}
       >
         <div className="flex items-center">
-          <div className="flex-shrink-0">
+          <div className="shrink-0">
             <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center group-hover:bg-indigo-200 transition-colors">
               <GitBranch className="w-5 h-5 text-indigo-600" />
             </div>
@@ -104,7 +103,7 @@ export default function StatsOverview({
         title={totalOpenMRs > 0 ? "Click to view open (non-draft) merge requests in GitLab" : "No open merge requests"}
       >
         <div className="flex items-center">
-          <div className="flex-shrink-0">
+          <div className="shrink-0">
             <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center group-hover:bg-green-200 transition-colors">
               <Eye className="w-5 h-5 text-green-600" />
             </div>
@@ -133,7 +132,7 @@ export default function StatsOverview({
         title={totalDraftMRs > 0 ? "Click to view draft merge requests in GitLab" : "No draft merge requests"}
       >
         <div className="flex items-center">
-          <div className="flex-shrink-0">
+          <div className="shrink-0">
             <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center group-hover:bg-gray-200 transition-colors">
               <FileText className="w-5 h-5 text-gray-600" />
             </div>
