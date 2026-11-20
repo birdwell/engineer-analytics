@@ -38,7 +38,7 @@ export default function TokenForm({ onSubmit, loading, error, hasStoredCredentia
 
         {hasStoredCredentials && (
           <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-start space-x-3">
-            <Shield className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
+            <Shield className="w-5 h-5 text-blue-500 mt-0.5 shrink-0" />
             <div>
               <h3 className="text-sm font-semibold text-blue-800">Stored Credentials Found</h3>
               <div className="text-sm text-blue-700 mt-1">
@@ -50,7 +50,7 @@ export default function TokenForm({ onSubmit, loading, error, hasStoredCredentia
 
         {error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start space-x-3">
-            <AlertCircle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
+            <AlertCircle className="w-5 h-5 text-red-500 mt-0.5 shrink-0" />
             <div>
               <h3 className="text-sm font-semibold text-red-800">Connection Error</h3>
               <div className="text-sm text-red-700 mt-1">{error}</div>
@@ -160,7 +160,7 @@ export default function TokenForm({ onSubmit, loading, error, hasStoredCredentia
           <button
             type="submit"
             disabled={loading || !isFormValid}
-            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-xs text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {loading ? (
               <div className="flex items-center space-x-2">
@@ -175,7 +175,7 @@ export default function TokenForm({ onSubmit, loading, error, hasStoredCredentia
 
         <div className="mt-6 p-4 bg-gray-50 rounded-lg">
           <div className="flex items-start space-x-3">
-            <Shield className="w-5 h-5 text-gray-500 mt-0.5 flex-shrink-0" />
+            <Shield className="w-5 h-5 text-gray-500 mt-0.5 shrink-0" />
             <div>
               <h3 className="text-sm font-semibold text-gray-800">Security Notice</h3>
               <div className="text-sm text-gray-600 mt-1">

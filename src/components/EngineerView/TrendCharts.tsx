@@ -1,5 +1,4 @@
-import React from 'react';
-import { TrendingUp, GitMerge, Eye, BarChart3 } from 'lucide-react';
+import { TrendingUp } from 'lucide-react';
 
 interface TrendChartsProps {
   weeklyStats: Array<{
@@ -20,7 +19,7 @@ export default function TrendCharts({ weeklyStats }: TrendChartsProps) {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <div className="bg-white rounded-xl shadow-xs border border-gray-200 p-6">
       <div className="flex items-center space-x-3 mb-6">
         <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
           <TrendingUp className="w-5 h-5 text-indigo-600" />

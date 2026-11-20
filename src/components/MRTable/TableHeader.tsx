@@ -12,14 +12,20 @@ interface TableHeaderProps {
   enhancementLoading: boolean;
 }
 
-export default function TableHeader({ 
-  sortField, 
-  sortDirection, 
-  onSort, 
-  hasComplexityData, 
-  enhancementLoading 
-}: TableHeaderProps) {
-  const SortButton = ({ field, children }: { field: SortField; children: React.ReactNode }) => (
+function SortButton({
+  field,
+  children,
+  sortField,
+  sortDirection,
+  onSort,
+}: {
+  field: SortField;
+  children: React.ReactNode;
+  sortField: SortField;
+  sortDirection: SortDirection;
+  onSort: (field: SortField) => void;
+}) {
+  return (
     <button
       onClick={() => onSort(field)}
       className="flex items-center space-x-1 hover:text-gray-900 transition-colors group"
@@ -43,15 +49,23 @@ export default function TableHeader({
       </div>
     </button>
   );
+}
 
+export default function TableHeader({ 
+  sortField, 
+  sortDirection, 
+  onSort, 
+  hasComplexityData, 
+  enhancementLoading 
+}: TableHeaderProps) {
   return (
     <thead className="bg-gray-50">
       <tr>
         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-          <SortButton field="name">Engineer</SortButton>
+          <SortButton field="name" sortField={sortField} sortDirection={sortDirection} onSort={onSort}>Engineer</SortButton>
         </th>
         <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-          <SortButton field="openMRs">
+          <SortButton field="openMRs" sortField={sortField} sortDirection={sortDirection} onSort={onSort}>
             <div className="flex items-center space-x-1">
               <GitPullRequest className="w-4 h-4" />
               <span>Open MRs</span>
@@ -59,7 +73,7 @@ export default function TableHeader({
           </SortButton>
         </th>
         <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-          <SortButton field="draftMRs">
+          <SortButton field="draftMRs" sortField={sortField} sortDirection={sortDirection} onSort={onSort}>
             <div className="flex items-center space-x-1">
               <FileText className="w-4 h-4" />
               <span>Draft MRs</span>
@@ -67,7 +81,7 @@ export default function TableHeader({
           </SortButton>
         </th>
         <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-          <SortButton field="assignedReviews">
+          <SortButton field="assignedReviews" sortField={sortField} sortDirection={sortDirection} onSort={onSort}>
             <div className="flex items-center space-x-1">
               <Eye className="w-4 h-4" />
               <span>Reviews</span>
@@ -75,7 +89,7 @@ export default function TableHeader({
           </SortButton>
         </th>
         <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-          <SortButton field="reviewComplexity">
+          <SortButton field="reviewComplexity" sortField={sortField} sortDirection={sortDirection} onSort={onSort}>
             <div className="flex items-center space-x-1">
               <Code className="w-4 h-4" />
               <span>Review Complexity</span>
@@ -86,7 +100,7 @@ export default function TableHeader({
           </SortButton>
         </th>
         <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-          <SortButton field="workloadScore">
+          <SortButton field="workloadScore" sortField={sortField} sortDirection={sortDirection} onSort={onSort}>
             <div className="flex items-center space-x-1">
               <Target className="w-4 h-4" />
               <span>Workload Score</span>
@@ -94,7 +108,7 @@ export default function TableHeader({
           </SortButton>
         </th>
         <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-          <SortButton field="total">
+          <SortButton field="total" sortField={sortField} sortDirection={sortDirection} onSort={onSort}>
             <div className="flex items-center space-x-1">
               <TrendingUp className="w-4 h-4" />
               <span>Total Activity</span>

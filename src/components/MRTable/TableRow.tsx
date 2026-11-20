@@ -1,4 +1,3 @@
-import React from 'react';
 import { User } from 'lucide-react';
 import { EngineerStats } from '../../types/gitlab';
 import { calculateWorkloadScore } from '../../utils/gitlab';
@@ -68,7 +67,7 @@ export default function TableRow({
     <tr className="hover:bg-gray-50 transition-colors">
       <td className="px-6 py-4 whitespace-nowrap">
         <div className="flex items-center space-x-3">
-          <div className="flex-shrink-0">
+          <div className="shrink-0">
             {stat.user.avatar_url ? (
               <img
                 className="h-10 w-10 rounded-full"

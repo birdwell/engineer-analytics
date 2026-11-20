@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import { EngineerStats } from '../../types/gitlab';
+import { EngineerStats, MergeRequest } from '../../types/gitlab';
 import { calculateWorkloadScore } from '../../utils/gitlab';
 import TableHeader from './TableHeader';
 import TableRow from './TableRow';
@@ -9,7 +9,7 @@ interface MRTableProps {
   engineerStats: EngineerStats[];
   hasComplexityData?: boolean;
   enhancementLoading?: boolean;
-  mergeRequests?: any[];
+  mergeRequests?: MergeRequest[];
   projectId?: string;
   projectPath?: string;
   token?: string;
@@ -24,10 +24,8 @@ export default function MRTable({
   engineerStats, 
   hasComplexityData = false, 
   enhancementLoading = false,
-  mergeRequests = [],
   projectId = '',
   projectPath = '',
-  token = '',
   onEngineerClick,
   isGroup = false
 }: MRTableProps) {

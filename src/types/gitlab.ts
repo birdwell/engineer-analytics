@@ -8,6 +8,7 @@ export interface GitLabUser {
 export interface MergeRequest {
   id: number;
   iid: number;
+  project_id?: number | string;
   title: string;
   state: 'opened' | 'closed' | 'merged';
   draft: boolean;
@@ -16,6 +17,7 @@ export interface MergeRequest {
   reviewers: GitLabUser[];
   created_at: string;
   updated_at: string;
+  merged_at?: string | null;
   web_url: string;
   changes_count?: string;
   diff_refs?: {

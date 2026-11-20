@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import { useRef } from 'react';
 import {
   Chart as ChartJS,
   ArcElement,
@@ -91,7 +91,7 @@ export default function PieChart({ data, title }: PieChartProps) {
         (event.native.target as HTMLElement).style.cursor = elements.length > 0 ? 'pointer' : 'default';
       }
     },
-    onClick: (event, elements) => {
+    onClick: (_event, elements) => {
       if (elements.length > 0) {
         const elementIndex = elements[0].index;
         const engineer = data[elementIndex];
@@ -105,7 +105,7 @@ export default function PieChart({ data, title }: PieChartProps) {
       <h2 className="text-xl font-semibold text-gray-900 mb-6">{title}</h2>
       
       <div className="flex flex-col xl:flex-row items-center space-y-6 xl:space-y-0 xl:space-x-8">
-        <div className="relative w-64 h-64 flex-shrink-0">
+        <div className="relative w-64 h-64 shrink-0">
           <Doughnut ref={chartRef} data={chartData} options={options} />
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div className="text-center">
@@ -131,15 +131,15 @@ export default function PieChart({ data, title }: PieChartProps) {
                   }}
                 >
                   <div
-                    className="w-4 h-4 rounded-full flex-shrink-0 ring-2 ring-white shadow-sm group-hover:scale-110 transition-transform"
+                    className="w-4 h-4 rounded-full shrink-0 ring-2 ring-white shadow-xs group-hover:scale-110 transition-transform"
                     style={{ backgroundColor: item.color }}
                   />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-gray-900 group-hover:text-indigo-600 transition-colors break-words">
+                      <span className="text-sm font-medium text-gray-900 group-hover:text-indigo-600 transition-colors wrap-break-word">
                         {item.name}
                       </span>
-                      <div className="flex items-center space-x-2 ml-2 flex-shrink-0">
+                      <div className="flex items-center space-x-2 ml-2 shrink-0">
                         <span className="text-sm font-semibold text-gray-900">
                           {item.value}
                         </span>

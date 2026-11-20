@@ -1,4 +1,3 @@
-import React from 'react';
 import { ArrowLeft, User, Database, Clock } from 'lucide-react';
 import { EngineerStats } from '../../types/gitlab';
 
@@ -22,7 +21,7 @@ export default function EngineerHeader({
   onClearCache
 }: EngineerHeaderProps) {
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+    <div className="bg-white rounded-xl shadow-xs border border-gray-200 p-6 mb-8">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-4">
           <button

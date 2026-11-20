@@ -1,4 +1,3 @@
-import React from 'react';
 import { Lightbulb, TrendingUp, Clock, Users, Code, Target, MessageCircle } from 'lucide-react';
 import { EngineerStats } from '../../types/gitlab';
 import { calculateWorkloadScore } from '../../utils/gitlab';
@@ -142,7 +141,7 @@ export default function ImprovementSuggestions({ engineer, mrHistory }: Improvem
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <div className="bg-white rounded-xl shadow-xs border border-gray-200 p-6">
       <div className="flex items-center space-x-3 mb-6">
         <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
           <Lightbulb className="w-5 h-5 text-yellow-600" />

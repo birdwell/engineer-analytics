@@ -1,4 +1,3 @@
-import React from 'react';
 import { Clock, GitMerge, Eye, ExternalLink } from 'lucide-react';
 import { MergeRequest } from '../../types/gitlab';
 
@@ -35,7 +34,7 @@ export default function RecentActivity({ authoredMRs, reviewedMRs }: RecentActiv
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <div className="bg-white rounded-xl shadow-xs border border-gray-200 p-6">
       <div className="flex items-center space-x-3 mb-6">
         <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
           <Clock className="w-5 h-5 text-gray-600" />

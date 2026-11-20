@@ -1,14 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import TokenForm from './components/TokenForm';
 import Dashboard from './components/Dashboard';
 import { fetchBasicDashboardData, fetchEnhancedDashboardData } from './utils/gitlab';
 import { saveCredentials, loadCredentials, clearCredentials, hasStoredCredentials } from './utils/storage';
 import { DashboardData } from './types/gitlab';
 
-type AppView = 'dashboard' | 'analytics';
-
 function App() {
-  const [currentView, setCurrentView] = useState<AppView>('dashboard');
   const [isConnected, setIsConnected] = useState(false);
   const [loading, setLoading] = useState(false);
   const [enhancementLoading, setEnhancementLoading] = useState(false);
@@ -17,28 +14,7 @@ function App() {
   const [credentials, setCredentials] = useState<{ token: string; projectId: string; projectPath?: string } | null>(null);
   const [initializing, setInitializing] = useState(true);
 
-  // Load stored credentials on app start
-  useEffect(() => {
-    const initializeApp = async () => {
-      try {
-        const storedCredentials = loadCredentials();
-        if (storedCredentials) {
-          setCredentials(storedCredentials);
-          // Auto-connect with stored credentials
-          await handleConnect(storedCredentials.token, storedCredentials.projectId, storedCredentials.projectPath, false);
-        }
-      } catch (error) {
-        console.error('Failed to initialize app:', error);
-        setError('Failed to initialize application');
-      } finally {
-        setInitializing(false);
-      }
-    };
-
-    initializeApp();
-  }, []);
-
-  const handleConnect = async (token: string, projectId: string, projectPath?: string, saveToStorage = true) => {
+  const handleConnect = useCallback(async (token: string, projectId: string, projectPath?: string, saveToStorage = true) => {
     setLoading(true);
     setError(null);
 
@@ -83,7 +59,27 @@ function App() {
       setLoading(false);
       setInitializing(false);
     }
-  };
+  }, []);
+
+  // Load stored credentials on app start
+  useEffect(() => {
+    const initializeApp = async () => {
+      try {
+        const storedCredentials = loadCredentials();
+        if (storedCredentials) {
+          setCredentials(storedCredentials);
+          await handleConnect(storedCredentials.token, storedCredentials.projectId, storedCredentials.projectPath, false);
+        }
+      } catch (error) {
+        console.error('Failed to initialize app:', error);
+        setError('Failed to initialize application');
+      } finally {
+        setInitializing(false);
+      }
+    };
+
+    void initializeApp();
+  }, [handleConnect]);
 
   const handleRefresh = async () => {
     if (!credentials) return;
@@ -130,17 +126,12 @@ function App() {
     setDashboardData(null);
     setError(null);
     setEnhancementLoading(false);
-    setCurrentView('dashboard');
-  };
-  
-  const handleBackToDashboard = () => {
-    setCurrentView('dashboard');
   };
 
   // Show loading spinner during initialization
   if (initializing) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-emerald-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-linear-to-br from-indigo-50 via-white to-emerald-50 flex items-center justify-center p-4">
         <div className="text-center">
           <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-600">Loading dashboard...</p>
@@ -151,7 +142,7 @@ function App() {
 
   if (!isConnected || !dashboardData) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-emerald-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-linear-to-br from-indigo-50 via-white to-emerald-50 flex items-center justify-center p-4">
         <TokenForm 
           onSubmit={(token, projectId, projectPath) => handleConnect(token, projectId, projectPath, true)} 
           loading={loading} 

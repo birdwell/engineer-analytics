@@ -1,5 +1,4 @@
-import React from 'react';
-import { RefreshCw, LogOut, Loader2, Database, BarChart3, Users, Folder, GitBranch, ExternalLink } from 'lucide-react';
+import { RefreshCw, LogOut, Loader2, Database, Users, Folder, GitBranch, ExternalLink } from 'lucide-react';
 
 interface DashboardHeaderProps {
   onRefresh: () => void;
@@ -35,12 +34,12 @@ export default function DashboardHeader({
   const gitlabUrl = getGitLabUrl();
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+    <div className="bg-white rounded-xl shadow-xs border border-gray-200 p-6 mb-8">
       {/* Main Header Row */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-6">
         <div className="flex items-center space-x-4 mb-4 lg:mb-0">
           {/* Logo/Icon */}
-          <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+          <div className="w-12 h-12 bg-linear-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
             <GitBranch className="w-6 h-6 text-white" />
           </div>
           
@@ -57,7 +56,7 @@ export default function DashboardHeader({
         <div className="flex items-center space-x-3">
           <button
             onClick={onDisconnect}
-            className="inline-flex items-center px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+            className="inline-flex items-center px-4 py-2.5 border border-gray-300 rounded-lg shadow-xs text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
           >
             <LogOut className="w-4 h-4 mr-2" />
             Disconnect
@@ -66,7 +65,7 @@ export default function DashboardHeader({
           <button
             onClick={onRefresh}
             disabled={loading}
-            className="inline-flex items-center px-4 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-lg shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-colors"
+            className="inline-flex items-center px-4 py-2.5 bg-indigo-600 text-white text-sm font-medium rounded-lg shadow-xs hover:bg-indigo-700 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 transition-colors"
           >
             <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Refresh
@@ -84,7 +83,7 @@ export default function DashboardHeader({
                 href={gitlabUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg border border-indigo-200 hover:from-indigo-100 hover:to-purple-100 hover:border-indigo-300 transition-all duration-200 cursor-pointer group"
+                className="flex items-center space-x-2 px-4 py-2 bg-linear-to-r from-indigo-50 to-purple-50 rounded-lg border border-indigo-200 hover:from-indigo-100 hover:to-purple-100 hover:border-indigo-300 transition-all duration-200 cursor-pointer group"
                 title={`Open ${isGroup ? 'group' : 'project'} in GitLab`}
               >
                 {isGroup ? (
@@ -102,7 +101,7 @@ export default function DashboardHeader({
                 <ExternalLink className="w-3 h-3 text-indigo-500 group-hover:text-indigo-600 opacity-60 group-hover:opacity-100 transition-all duration-200" />
               </a>
             ) : (
-              <div className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg border border-indigo-200">
+              <div className="flex items-center space-x-2 px-4 py-2 bg-linear-to-r from-indigo-50 to-purple-50 rounded-lg border border-indigo-200">
                 {isGroup ? (
                   <Users className="w-4 h-4 text-indigo-600" />
                 ) : (

@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { ArrowLeft, User, TrendingUp, GitMerge, Clock, Eye, Code, Target, Calendar, BarChart3, Download } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { User, BarChart3, Download } from 'lucide-react';
 import { EngineerStats, MergeRequest } from '../../types/gitlab';
-import { calculateWorkloadScore } from '../../utils/gitlab';
-import { fetchEngineerMRHistory, EngineerMRHistory } from '../../utils/engineerAnalytics';
+import { EngineerMRHistory, RawAnalyticsData } from '../../utils/engineerAnalytics';
 import { getEngineerCacheInfo, clearEngineerCache } from '../../utils/engineerCache';
 import EngineerHeader from './EngineerHeader';
 import CurrentWorkload from './CurrentWorkload';
@@ -25,13 +24,15 @@ interface EngineerViewProps {
 interface LoadingStage {
   stage: string;
   completed: boolean;
-  data?: any;
+  data?: unknown;
 }
 
 export default function EngineerView({ engineer, onBack, token, projectId, allMRs }: EngineerViewProps) {
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(Boolean(token && projectId));
   const [mrHistory, setMRHistory] = useState<EngineerMRHistory | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(
+    token && projectId ? null : 'Missing authentication credentials'
+  );
   const [selectedTimeframe, setSelectedTimeframe] = useState<'7d' | '30d' | '90d'>('30d');
   const [cacheInfo, setCacheInfo] = useState<{ cached: boolean; lastUpdated: Date | null; timeframes: string[] }>({ 
     cached: false, 
@@ -45,34 +46,24 @@ export default function EngineerView({ engineer, onBack, token, projectId, allMR
     { stage: 'Computing response times', completed: false },
     { stage: 'Generating insights', completed: false }
   ]);
-  const [rawAnalyticsData, setRawAnalyticsData] = useState<any>(null);
+  const [rawAnalyticsData, setRawAnalyticsData] = useState<RawAnalyticsData | null>(null);
 
-  useEffect(() => {
-    if (token && projectId) {
-      const info = getEngineerCacheInfo(projectId, engineer.user.username);
-      setCacheInfo(info);
-      loadEngineerData();
-    } else {
-      setError('Missing authentication credentials');
-      setLoading(false);
-    }
-  }, [engineer.user.id, selectedTimeframe]);
-
-  const updateLoadingStage = (stageIndex: number, completed: boolean, data?: any) => {
+  const updateLoadingStage = useCallback((stageIndex: number, completed: boolean, data?: unknown) => {
     setLoadingStages(prev => prev.map((stage, index) => 
       index === stageIndex ? { ...stage, completed, data } : stage
     ));
-  };
+  }, []);
 
-  const loadEngineerData = async () => {
+  const loadEngineerData = useCallback(async () => {
     if (!token || !projectId) return;
-    
+
+    setCacheInfo(getEngineerCacheInfo(projectId, engineer.user.username));
     setLoading(true);
     setError(null);
     setLoadingStages(prev => prev.map(stage => ({ ...stage, completed: false, data: undefined })));
 
     try {
-      const history = await fetchEngineerMRHistoryProgressive(
+      await fetchEngineerMRHistoryProgressive(
         token, 
         projectId, 
         engineer.user.username, 
@@ -134,7 +125,19 @@ export default function EngineerView({ engineer, onBack, token, projectId, allMR
     } finally {
       setLoading(false);
     }
-  };
+  }, [allMRs, engineer, projectId, selectedTimeframe, token, updateLoadingStage]);
+
+  useEffect(() => {
+    if (!token || !projectId) return;
+    let cancelled = false;
+    // Defer so the fetch's state updates are not synchronous setState inside the effect.
+    void Promise.resolve().then(() => {
+      if (!cancelled) void loadEngineerData();
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [loadEngineerData, projectId, token]);
 
   const handleClearCache = () => {
     if (projectId) {
@@ -151,7 +154,7 @@ export default function EngineerView({ engineer, onBack, token, projectId, allMR
       return;
     }
 
-    const csvData = generateCSVData(mrHistory, rawAnalyticsData, engineer);
+    const csvData = generateCSVData(mrHistory, rawAnalyticsData);
     const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
@@ -167,7 +170,7 @@ export default function EngineerView({ engineer, onBack, token, projectId, allMR
     return (
       <div className="min-h-screen bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12">
+          <div className="bg-white rounded-xl shadow-xs border border-gray-200 p-12">
             <div className="text-center">
               <div className="w-12 h-12 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Loading Engineer Analytics</h3>
@@ -235,7 +238,7 @@ export default function EngineerView({ engineer, onBack, token, projectId, allMR
             cacheInfo={cacheInfo}
             onClearCache={handleClearCache}
           />
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12">
+          <div className="bg-white rounded-xl shadow-xs border border-gray-200 p-12">
             <div className="text-center max-w-md mx-auto">
               <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <User className="w-8 h-8 text-red-600" />
@@ -244,7 +247,7 @@ export default function EngineerView({ engineer, onBack, token, projectId, allMR
               <p className="text-gray-600 mb-6">{error}</p>
               <button
                 onClick={loadEngineerData}
-                className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
+                className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
               >
                 <BarChart3 className="w-4 h-4 mr-2" />
                 Retry
@@ -278,7 +281,7 @@ export default function EngineerView({ engineer, onBack, token, projectId, allMR
           {rawAnalyticsData && (
             <button
               onClick={downloadCSV}
-              className="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
+              className="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors"
             >
               <Download className="w-4 h-4 mr-2" />
               Download CSV
@@ -338,9 +341,9 @@ async function fetchEngineerMRHistoryProgressive(
   projectId: string,
   username: string,
   timeframe: '7d' | '30d' | '90d',
-  updateStage: (index: number, completed: boolean, data?: any) => void,
+  updateStage: (index: number, completed: boolean, data?: unknown) => void,
   setPartialData: (data: EngineerMRHistory) => void,
-  setRawData: (data: any) => void
+  setRawData: (data: RawAnalyticsData) => void
 ): Promise<EngineerMRHistory> {
   const { fetchEngineerMRHistoryWithStages } = await import('../../utils/engineerAnalytics');
   
@@ -356,7 +359,7 @@ async function fetchEngineerMRHistoryProgressive(
 }
 
 // CSV generation function
-function generateCSVData(mrHistory: EngineerMRHistory, rawData: any, engineer: EngineerStats): string {
+function generateCSVData(mrHistory: EngineerMRHistory, rawData: RawAnalyticsData): string {
   const headers = [
     'Data Type',
     'MR IID',
@@ -433,7 +436,7 @@ function generateCSVData(mrHistory: EngineerMRHistory, rawData: any, engineer: E
 
   // Add comment data
   if (rawData.comments) {
-    rawData.comments.forEach((comment: any) => {
+    rawData.comments.forEach((comment) => {
       rows.push([
         'Comment',
         comment.mrIid || '',
@@ -460,7 +463,7 @@ function generateCSVData(mrHistory: EngineerMRHistory, rawData: any, engineer: E
 
   // Add response time data
   if (rawData.responseTimeData) {
-    rawData.responseTimeData.forEach((response: any) => {
+    rawData.responseTimeData.forEach((response) => {
       rows.push([
         'Response Time',
         response.mrIid || '',

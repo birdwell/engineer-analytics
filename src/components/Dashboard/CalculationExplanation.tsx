@@ -1,4 +1,3 @@
-import React from 'react';
 import { Calculator, Info } from 'lucide-react';
 
 export default function CalculationExplanation() {
@@ -52,9 +51,9 @@ export default function CalculationExplanation() {
 
             <div className="mt-4 pt-3 border-t border-blue-200">
               <div className="flex items-center justify-between text-xs font-medium">
-                <span className="px-2 py-1 bg-green-100 text-green-800 rounded">0.1-2.0: Simple</span>
-                <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded">2.1-5.0: Moderate</span>
-                <span className="px-2 py-1 bg-red-100 text-red-800 rounded">5.1+: Complex</span>
+                <span className="px-2 py-1 bg-green-100 text-green-800 rounded-sm">0.1-2.0: Simple</span>
+                <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-sm">2.1-5.0: Moderate</span>
+                <span className="px-2 py-1 bg-red-100 text-red-800 rounded-sm">5.1+: Complex</span>
               </div>
             </div>
           </div>
@@ -95,9 +94,9 @@ export default function CalculationExplanation() {
 
             <div className="mt-4 pt-3 border-t border-purple-200">
               <div className="flex items-center justify-between text-xs font-medium">
-                <span className="px-2 py-1 bg-green-100 text-green-800 rounded">0-9: Light Load</span>
-                <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded">10-19: Moderate</span>
-                <span className="px-2 py-1 bg-red-100 text-red-800 rounded">20+: Heavy Load</span>
+                <span className="px-2 py-1 bg-green-100 text-green-800 rounded-sm">0-9: Light Load</span>
+                <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-sm">10-19: Moderate</span>
+                <span className="px-2 py-1 bg-red-100 text-red-800 rounded-sm">20+: Heavy Load</span>
               </div>
             </div>
           </div>

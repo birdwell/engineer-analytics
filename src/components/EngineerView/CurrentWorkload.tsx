@@ -1,4 +1,3 @@
-import React from 'react';
 import { Eye, GitBranch, FileText, Target } from 'lucide-react';
 import { EngineerStats } from '../../types/gitlab';
 import { calculateWorkloadScore } from '../../utils/gitlab';
@@ -23,7 +22,7 @@ export default function CurrentWorkload({ engineer }: CurrentWorkloadProps) {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <div className="bg-white rounded-xl shadow-xs border border-gray-200 p-6">
       <h2 className="text-xl font-semibold text-gray-900 mb-6">Current Workload</h2>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

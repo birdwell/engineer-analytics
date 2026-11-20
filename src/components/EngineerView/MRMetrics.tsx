@@ -1,4 +1,3 @@
-import React from 'react';
 import { GitMerge, Plus, Minus, Clock, BarChart3, MessageCircle, Users } from 'lucide-react';
 import InfoTooltip from '../InfoTooltip';
 import { MergeRequest } from '../../types/gitlab';
@@ -37,7 +36,7 @@ export default function MRMetrics({
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+    <div className="bg-white rounded-xl shadow-xs border border-gray-200 p-6">
       <div className="flex items-center space-x-3 mb-6">
         <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
           <GitMerge className="w-5 h-5 text-green-600" />

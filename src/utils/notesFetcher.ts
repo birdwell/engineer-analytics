@@ -72,7 +72,7 @@ export async function fetchNotesForMRs(
             `${API_BASE}/projects/${projectId}/merge_requests/${mrIid}/discussions?per_page=100`,
             { headers, signal: AbortSignal.timeout(10_000) }
           ).then(r => r.ok ? r.json() : [])
-           .then((discussions: any[]) => discussions.flatMap((d: any) => d.notes || []))
+           .then((discussions: Array<{ notes?: MRNote[] }>) => discussions.flatMap((discussion) => discussion.notes || []))
            .catch(() => [] as MRNote[])
         );
       }

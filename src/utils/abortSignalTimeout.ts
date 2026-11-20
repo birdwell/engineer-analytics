@@ -4,9 +4,14 @@
  * request timeouts. Importing this module once (e.g. in `main.tsx`) will ensure
  * the method is available in the global `AbortSignal` interface at runtime.
  */
+type AbortSignalWithTimeout = typeof AbortSignal & {
+  timeout?: (milliseconds: number) => AbortSignal;
+};
+
 export function ensureAbortSignalTimeout() {
-  if (typeof (AbortSignal as any).timeout !== 'function') {
-    (AbortSignal as any).timeout = function timeout(ms: number) {
+  const signalCtor = AbortSignal as AbortSignalWithTimeout;
+  if (typeof signalCtor.timeout !== 'function') {
+    signalCtor.timeout = function timeout(ms: number) {
       const controller = new AbortController();
       setTimeout(() => controller.abort(), ms);
       return controller.signal;
