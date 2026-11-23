@@ -670,9 +670,9 @@ cacheable@^2.5.0:
     qified "^0.10.1"
 
 caniuse-lite@^1.0.30001826:
-  version "1.0.30001826"
-  resolved "https://registry.npmjs.org/caniuse-lite/-/caniuse-lite-1.0.30001826.tgz"
-  integrity sha512-wTB+9tIbLro/BCXwLuNV1meHE4L9dS6dArMDwgYfNBPMYScqClHyGunhkCSDtHhe/69Xl0sHlKgBVZ+fNsYtWA==
+  version "1.0.30001827"
+  resolved "https://registry.npmjs.org/caniuse-lite/-/caniuse-lite-1.0.30001827.tgz"
+  integrity sha512-YWEDr46gSO81M8w6uPbaIy4++IXsirx2asUqvllNiD4BPf75ibxclUjWEqp8ObCenRv+UM2n5Y8xuRPT8V8FrQ==
 
 chai@^6.3.0:
   version "6.3.0"
@@ -1165,9 +1165,9 @@ lru-cache@^5.1.1:
     yallist "^3.0.2"
 
 lucide-react@^1.77.0:
-  version "1.77.0"
-  resolved "https://registry.npmjs.org/lucide-react/-/lucide-react-1.77.0.tgz"
-  integrity sha512-VS6sOi8ZUH1qm6swBL/tpI4xAhB6pFTdHvw3pfCJD+DaTJwpyynVzfOS6mdyMZ+OCdY/GMSQbqinOMOPbNSrQA==
+  version "1.78.0"
+  resolved "https://registry.npmjs.org/lucide-react/-/lucide-react-1.78.0.tgz"
+  integrity sha512-61NFdT5ZfAY8xs3LWKkB78GVeuiCcjYFEXeHWxWP+mQhP+UWLGsA9hJZQPtIyXRDhOvT8kgmWwAIyH5L7RIhAA==
 
 magic-string@^1.1.0, magic-string@^1.4.5:
   version "1.4.5"
