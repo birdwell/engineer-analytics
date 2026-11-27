@@ -144,7 +144,9 @@ function App() {
     return (
       <div className="min-h-screen bg-linear-to-br from-indigo-50 via-white to-emerald-50 flex items-center justify-center p-4">
         <TokenForm 
-          onSubmit={(token, projectId, projectPath) => handleConnect(token, projectId, projectPath, true)} 
+          onSubmit={(token, projectId, projectPath) => {
+            void handleConnect(token, projectId, projectPath, true);
+          }} 
           loading={loading} 
           error={error}
           hasStoredCredentials={hasStoredCredentials()}
@@ -156,7 +158,9 @@ function App() {
   return (
     <Dashboard
       data={dashboardData}
-      onRefresh={handleRefresh}
+      onRefresh={() => {
+        void handleRefresh();
+      }}
       onDisconnect={handleDisconnect}
       loading={loading}
       enhancementLoading={enhancementLoading}

@@ -144,7 +144,7 @@ export default function EngineerView({ engineer, onBack, token, projectId, allMR
       clearEngineerCache(projectId, engineer.user.username);
       const info = getEngineerCacheInfo(projectId, engineer.user.username);
       setCacheInfo(info);
-      loadEngineerData();
+      void loadEngineerData();
     }
   };
 
@@ -246,7 +246,9 @@ export default function EngineerView({ engineer, onBack, token, projectId, allMR
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Failed to Load Data</h3>
               <p className="text-gray-600 mb-6">{error}</p>
               <button
-                onClick={loadEngineerData}
+                onClick={() => {
+                  void loadEngineerData();
+                }}
                 className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
               >
                 <BarChart3 className="w-4 h-4 mr-2" />

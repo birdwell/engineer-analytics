@@ -1,3 +1,5 @@
+import { isRecord, parseAs, parseJson } from './json';
+
 interface CachedAnalytics {
   data: ReviewMetrics;
   timestamp: number;
@@ -17,6 +19,14 @@ interface ReviewMetrics {
   openMRsAnalyzed: number;
 }
 
+function isCachedAnalytics(value: unknown): value is CachedAnalytics {
+  return isRecord(value)
+    && typeof value.timestamp === 'number'
+    && typeof value.projectId === 'string'
+    && typeof value.timeframe === 'string'
+    && isRecord(value.data);
+}
+
 const CACHE_KEY_PREFIX = 'gitlab_analytics_';
 const CACHE_EXPIRY_HOURS = 2; // Cache analytics for 2 hours
 
@@ -30,7 +40,8 @@ export function getCachedAnalytics(
     
     if (!cached) return null;
     
-    const cachedData: CachedAnalytics = JSON.parse(cached);
+    const cachedData = parseAs(cached, isCachedAnalytics);
+    if (!cachedData) return null;
     
     // Check if cache has expired
     const hoursSinceCached = (Date.now() - cachedData.timestamp) / (1000 * 60 * 60);
@@ -84,8 +95,9 @@ export function clearAnalyticsCache(projectId?: string): void {
         try {
           const cached = localStorage.getItem(key);
           if (cached) {
-            const cachedData: CachedAnalytics = JSON.parse(cached);
-            return cachedData.projectId === projectId;
+            const parsed = parseJson(cached);
+            if (!isRecord(parsed)) return true;
+            return parsed.projectId === projectId;
           }
         } catch {
           // If we can't parse it, remove it anyway
@@ -115,8 +127,8 @@ export function getAnalyticsCacheInfo(projectId: string): {
       try {
         const cached = localStorage.getItem(key);
         if (cached) {
-          const cachedData: CachedAnalytics = JSON.parse(cached);
-          return cachedData.projectId === projectId;
+          const parsed = parseJson(cached);
+          return isRecord(parsed) && parsed.projectId === projectId;
         }
       } catch {
         return false;
@@ -137,11 +149,14 @@ export function getAnalyticsCacheInfo(projectId: string): {
       try {
         const cached = localStorage.getItem(key);
         if (cached) {
-          const cachedData: CachedAnalytics = JSON.parse(cached);
-          if (cachedData.timestamp > mostRecentTimestamp) {
-            mostRecentTimestamp = cachedData.timestamp;
+          const parsed = parseJson(cached);
+          if (!isRecord(parsed)) return;
+          if (typeof parsed.timestamp === 'number' && parsed.timestamp > mostRecentTimestamp) {
+            mostRecentTimestamp = parsed.timestamp;
           }
-          timeframes.push(cachedData.timeframe);
+          if (typeof parsed.timeframe === 'string') {
+            timeframes.push(parsed.timeframe);
+          }
         }
       } catch {
         // Ignore invalid cache entries

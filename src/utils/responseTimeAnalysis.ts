@@ -1,4 +1,4 @@
-import { FetchedMRNotes, isSystemOrAutomated, MRNote } from './notesFetcher';
+import { FetchedMRNotes, isSystemOrAutomated, MRNote, readDiscussionNotes, readNoteList } from './notesFetcher';
 import { runBatch, API_BASE } from './gitlabApi';
 
 interface CommentThread {
@@ -134,10 +134,8 @@ async function fetchThreadsForMR(
       )
     ]);
 
-    const notes: MRNote[] = notesResp.ok ? await notesResp.json() : [];
-    const discussions: MRNote[] = discussionsResp.ok
-      ? (await discussionsResp.json() as Array<{ notes?: MRNote[] }>).flatMap((discussion) => discussion.notes || [])
-      : [];
+    const notes = await readNoteList(notesResp);
+    const discussions = await readDiscussionNotes(discussionsResp);
 
     const allNotes = [...notes, ...discussions]
       .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());

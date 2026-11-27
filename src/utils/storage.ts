@@ -1,11 +1,20 @@
 import { clearComplexityCache } from './complexityCache';
 import { clearAnalyticsCache } from './analyticsCache';
+import { isRecord, parseAs, parseJson } from './json';
 
 interface StoredCredentials {
   token: string;
   projectId: string;
   projectPath?: string;
   timestamp: number;
+}
+
+function isStoredCredentials(value: unknown): value is StoredCredentials {
+  return isRecord(value)
+    && typeof value.token === 'string'
+    && typeof value.projectId === 'string'
+    && typeof value.timestamp === 'number'
+    && (value.projectPath === undefined || typeof value.projectPath === 'string');
 }
 
 const STORAGE_KEY = 'gitlab_dashboard_credentials';
@@ -31,7 +40,11 @@ export function loadCredentials(): { token: string; projectId: string; projectPa
     const stored = localStorage.getItem(STORAGE_KEY);
     if (!stored) return null;
     
-    const credentials: StoredCredentials = JSON.parse(stored);
+    const credentials = parseAs(stored, isStoredCredentials);
+    if (!credentials) {
+      clearCredentials();
+      return null;
+    }
     
     // Check if credentials have expired
     const daysSinceStored = (Date.now() - credentials.timestamp) / (1000 * 60 * 60 * 24);
@@ -59,8 +72,10 @@ export function clearCredentials(): void {
     
     if (stored) {
       try {
-        const credentials: StoredCredentials = JSON.parse(stored);
-        projectId = credentials.projectId;
+        const parsed = parseJson(stored);
+        if (isRecord(parsed) && typeof parsed.projectId === 'string') {
+          projectId = parsed.projectId;
+        }
       } catch {
         // If we can't parse, just clear everything
       }

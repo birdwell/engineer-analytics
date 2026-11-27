@@ -1,3 +1,5 @@
+import { isUnknownArray, readResponseJson } from './json';
+
 const API_BASE = 'https://gitlab.com/api/v4';
 
 const inflightRequests = new Map<string, Promise<Response>>();
@@ -69,7 +71,7 @@ export async function gitlabGet<T>(
     throw new Error(`GitLab API error: ${response.status} ${response.statusText}`);
   }
 
-  const data = await response.json();
+  const data = await readResponseJson(response);
   responseCache.set(url, { data, timestamp: Date.now() });
   return data as T;
 }
@@ -105,7 +107,11 @@ export async function gitlabGetAllPages<T>(
       throw new Error(`GitLab API error: ${response.status} ${response.statusText}`);
     }
 
-    const items: T[] = await response.json();
+    const body = await readResponseJson(response);
+    if (!isUnknownArray(body)) {
+      throw new Error(`GitLab API error: expected a list from ${path}`);
+    }
+    const items = body as T[];
     allItems.push(...items);
 
     if (items.length < perPage) break;

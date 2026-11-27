@@ -1,20 +1,31 @@
+import type { MRComplexity } from '../types/gitlab';
+import { isRecord, parseAs, parseJson } from './json';
+
 interface CachedComplexity {
-  data: import('../types/gitlab').MRComplexity;
+  data: MRComplexity;
   timestamp: number;
   projectId: string;
+}
+
+function isCachedComplexity(value: unknown): value is CachedComplexity {
+  return isRecord(value)
+    && typeof value.timestamp === 'number'
+    && typeof value.projectId === 'string'
+    && isRecord(value.data);
 }
 
 const CACHE_KEY_PREFIX = 'gitlab_mr_complexity_';
 const CACHE_EXPIRY_HOURS = 24; // Cache complexity data for 24 hours
 
-export function getCachedComplexity(projectId: string, mrIid: number): import('../types/gitlab').MRComplexity | null {
+export function getCachedComplexity(projectId: string, mrIid: number): MRComplexity | null {
   try {
     const cacheKey = `${CACHE_KEY_PREFIX}${projectId}_${mrIid}`;
     const cached = localStorage.getItem(cacheKey);
     
     if (!cached) return null;
     
-    const cachedData: CachedComplexity = JSON.parse(cached);
+    const cachedData = parseAs(cached, isCachedComplexity);
+    if (!cachedData) return null;
     
     // Check if cache has expired
     const hoursSinceCached = (Date.now() - cachedData.timestamp) / (1000 * 60 * 60);
@@ -36,7 +47,7 @@ export function getCachedComplexity(projectId: string, mrIid: number): import('.
   }
 }
 
-export function setCachedComplexity(projectId: string, complexity: import('../types/gitlab').MRComplexity): void {
+export function setCachedComplexity(projectId: string, complexity: MRComplexity): void {
   try {
     const cacheKey = `${CACHE_KEY_PREFIX}${projectId}_${complexity.id}`;
     const cachedData: CachedComplexity = {
@@ -63,8 +74,9 @@ export function clearComplexityCache(projectId?: string): void {
         try {
           const cached = localStorage.getItem(key);
           if (cached) {
-            const cachedData: CachedComplexity = JSON.parse(cached);
-            return cachedData.projectId === projectId;
+            const parsed = parseJson(cached);
+            if (!isRecord(parsed)) return true;
+            return parsed.projectId === projectId;
           }
         } catch {
           // If we can't parse it, remove it anyway
@@ -90,8 +102,8 @@ export function getCacheStats(projectId: string): { cached: number; total: numbe
       try {
         const cached = localStorage.getItem(key);
         if (cached) {
-          const cachedData: CachedComplexity = JSON.parse(cached);
-          return cachedData.projectId === projectId;
+          const parsed = parseJson(cached);
+          return isRecord(parsed) && parsed.projectId === projectId;
         }
       } catch {
         return false;
