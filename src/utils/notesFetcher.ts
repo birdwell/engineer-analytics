@@ -1,4 +1,5 @@
 import { runBatch, API_BASE } from './gitlabApi';
+import { isRecord, isUnknownArray, readResponseJson } from './json';
 
 export interface MRNote {
   id: number;
@@ -35,6 +36,27 @@ export function isSystemOrAutomated(note: MRNote): boolean {
   return note.system || note.body.trim().length === 0 || isAutomatedComment(note.body);
 }
 
+function isNoteList(value: unknown): value is MRNote[] {
+  return Array.isArray(value);
+}
+
+export async function readNoteList(response: Response): Promise<MRNote[]> {
+  if (!response.ok) return [];
+  const body = await readResponseJson(response);
+  return isNoteList(body) ? body : [];
+}
+
+export async function readDiscussionNotes(response: Response): Promise<MRNote[]> {
+  if (!response.ok) return [];
+  const body = await readResponseJson(response);
+  if (!isUnknownArray(body)) return [];
+
+  return body.flatMap((discussion) => {
+    if (!isRecord(discussion) || !isNoteList(discussion.notes)) return [];
+    return discussion.notes;
+  });
+}
+
 export function getHumanNotes(notes: MRNote[], excludeUsername?: string): MRNote[] {
   return notes.filter(n =>
     !isSystemOrAutomated(n) &&
@@ -59,11 +81,11 @@ export async function fetchNotesForMRs(
         'Content-Type': 'application/json',
       };
 
-      const promises: Promise<MRNote[]>[] = [
+      const promises: Array<Promise<MRNote[]>> = [
         fetch(
           `${API_BASE}/projects/${projectId}/merge_requests/${mrIid}/notes?per_page=100&sort=asc`,
           { headers, signal: AbortSignal.timeout(10_000) }
-        ).then(r => r.ok ? r.json() : []).catch(() => [] as MRNote[])
+        ).then(readNoteList).catch((): MRNote[] => [])
       ];
 
       if (includeDiscussions) {
@@ -71,14 +93,12 @@ export async function fetchNotesForMRs(
           fetch(
             `${API_BASE}/projects/${projectId}/merge_requests/${mrIid}/discussions?per_page=100`,
             { headers, signal: AbortSignal.timeout(10_000) }
-          ).then(r => r.ok ? r.json() : [])
-           .then((discussions: Array<{ notes?: MRNote[] }>) => discussions.flatMap((discussion) => discussion.notes || []))
-           .catch(() => [] as MRNote[])
+          ).then(readDiscussionNotes).catch((): MRNote[] => [])
         );
       }
 
       const [notes, discussions = []] = await Promise.all(promises);
-      return { mrIid, notes, discussions } as FetchedMRNotes;
+      return { mrIid, notes, discussions };
     },
     6,
     30

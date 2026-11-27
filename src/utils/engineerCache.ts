@@ -1,9 +1,21 @@
+import type { EngineerMRHistory } from './engineerAnalytics';
+import { isRecord, parseAs, parseJson } from './json';
+
 interface CachedEngineerData {
-  data: import('./engineerAnalytics').EngineerMRHistory;
+  data: EngineerMRHistory;
   timestamp: number;
   projectId: string;
   username: string;
   timeframe: string;
+}
+
+function isCachedEngineerData(value: unknown): value is CachedEngineerData {
+  return isRecord(value)
+    && typeof value.timestamp === 'number'
+    && typeof value.projectId === 'string'
+    && typeof value.username === 'string'
+    && typeof value.timeframe === 'string'
+    && isRecord(value.data);
 }
 
 const CACHE_KEY_PREFIX = 'gitlab_engineer_';
@@ -13,14 +25,15 @@ export function getCachedEngineerData(
   projectId: string, 
   username: string,
   timeframe: '7d' | '30d' | '90d'
-): import('./engineerAnalytics').EngineerMRHistory | null {
+): EngineerMRHistory | null {
   try {
     const cacheKey = `${CACHE_KEY_PREFIX}${projectId}_${username}_${timeframe}`;
     const cached = localStorage.getItem(cacheKey);
     
     if (!cached) return null;
     
-    const cachedData: CachedEngineerData = JSON.parse(cached);
+    const cachedData = parseAs(cached, isCachedEngineerData);
+    if (!cachedData) return null;
     
     // Check if cache has expired
     const hoursSinceCached = (Date.now() - cachedData.timestamp) / (1000 * 60 * 60);
@@ -80,7 +93,7 @@ export function setCachedEngineerData(
   projectId: string, 
   username: string,
   timeframe: '7d' | '30d' | '90d',
-  data: import('./engineerAnalytics').EngineerMRHistory
+  data: EngineerMRHistory
 ): void {
   try {
     const cacheKey = `${CACHE_KEY_PREFIX}${projectId}_${username}_${timeframe}`;
@@ -109,9 +122,10 @@ export function clearEngineerCache(projectId?: string, username?: string): void 
         try {
           const cached = localStorage.getItem(key);
           if (cached) {
-            const cachedData: CachedEngineerData = JSON.parse(cached);
-            return (!projectId || cachedData.projectId === projectId) &&
-                   (!username || cachedData.username === username);
+            const parsed = parseJson(cached);
+            if (!isRecord(parsed)) return true;
+            return (!projectId || parsed.projectId === projectId) &&
+                   (!username || parsed.username === username);
           }
         } catch {
           return true;
@@ -140,8 +154,10 @@ export function getEngineerCacheInfo(projectId: string, username: string): {
       try {
         const cached = localStorage.getItem(key);
         if (cached) {
-          const cachedData: CachedEngineerData = JSON.parse(cached);
-          return cachedData.projectId === projectId && cachedData.username === username;
+          const parsed = parseJson(cached);
+          return isRecord(parsed)
+            && parsed.projectId === projectId
+            && parsed.username === username;
         }
       } catch {
         return false;
@@ -161,11 +177,14 @@ export function getEngineerCacheInfo(projectId: string, username: string): {
       try {
         const cached = localStorage.getItem(key);
         if (cached) {
-          const cachedData: CachedEngineerData = JSON.parse(cached);
-          if (cachedData.timestamp > mostRecentTimestamp) {
-            mostRecentTimestamp = cachedData.timestamp;
+          const parsed = parseJson(cached);
+          if (!isRecord(parsed)) return;
+          if (typeof parsed.timestamp === 'number' && parsed.timestamp > mostRecentTimestamp) {
+            mostRecentTimestamp = parsed.timestamp;
           }
-          timeframes.push(cachedData.timeframe);
+          if (typeof parsed.timeframe === 'string') {
+            timeframes.push(parsed.timeframe);
+          }
         }
       } catch {
         // Ignore invalid cache entries
